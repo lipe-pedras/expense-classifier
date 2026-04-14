@@ -1,0 +1,134 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: expense_classifier
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_dev_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: dev
+    command: npm run dev
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/expense_classifier
+      TEST_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/expense_classifier
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev_jwt_secret
+      JWT_REFRESH_SECRET: dev_refresh_secret
+      INTERNAL_SERVICE_TOKEN: dev_internal_token
+      FILE_UPLOAD_PATH: /app/uploads
+      MAX_FILE_SIZE_MB: 20
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+      - uploads_dev_data:/app/uploads
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    command: python -u main.py
+    environment:
+      REDIS_URL: redis://redis:6379
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: qwen2.5:7b-instruct-q3_K_M
+      INTERNAL_SERVICE_TOKEN: dev_internal_token
+      INTERNAL_API_URL: http://api:3000
+      FILE_UPLOAD_PATH: /app/uploads
+    depends_on:
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      api:
+        condition: service_started
+    volumes:
+      - ./worker:/app
+      - uploads_dev_data:/app/uploads
+      - easyocr_dev_cache:/root/.EasyOCR
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    command: npm run dev -- --host 0.0.0.0
+    environment:
+      VITE_API_URL: http://localhost:3000
+      VITE_MAX_FILE_SIZE_MB: 20
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  prisma-studio:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: dev
+    command: npx prisma studio --hostname 0.0.0.0 --port 5555
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/expense_classifier
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+
+volumes:
+  postgres_dev_data:
+  ollama_dev_data:
+  uploads_dev_data:
+  easyocr_dev_cache:

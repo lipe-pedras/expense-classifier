@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum FileType {
+  PDF
+  IMAGE
+}
+
+model User {
+  id           String     @id @default(cuid())
+  username     String     @unique
+  email        String     @unique
+  passwordHash String
+  createdAt    DateTime   @default(now())
+  documents    Document[]
+  categories   Category[]
+  expenses     Expense[]
+}
+
+model Document {
+  id           String           @id @default(cuid())
+  userId       String
+  originalName String
+  filePath     String
+  fileType     FileType
+  status       ProcessingStatus @default(PENDING)
+  expenseCount Int              @default(0)
+  uploadedAt   DateTime         @default(now())
+  user         User             @relation(fields: [userId], references: [id])
+  expenses     Expense[]
+}
+
+model Expense {
+  id           String   @id @default(cuid())
+  documentId   String
+  userId       String
+  categoryId   String
+  segmentIndex Int      @default(0)
+  amount       Float
+  currency     String   @default("BRL")
+  expenseDate  DateTime
+  vendor       String?
+  confidence   Float
+  rawText      String   @db.Text
+  createdAt    DateTime @default(now())
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  category     Category @relation(fields: [categoryId], references: [id])
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  userId   String
+  name     String
+  slug     String
+  isSystem Boolean   @default(false)
+  user     User      @relation(fields: [userId], references: [id])
+  expenses Expense[]
+
+  @@unique([userId, slug])
+}
