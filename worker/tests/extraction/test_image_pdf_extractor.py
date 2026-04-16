@@ -10,7 +10,7 @@ def make_pil_image():
     return Image.fromarray(np.zeros((10, 10, 3), dtype=np.uint8))
 
 
-def test_extract_single_page():
+def test_extract_single_page_returns_list():
     mock_reader = MagicMock()
     mock_reader.readtext.return_value = ["Scanned text"]
 
@@ -20,10 +20,10 @@ def test_extract_single_page():
         mock_convert.return_value = [make_pil_image()]
         result = extractor.extract("scanned.pdf")
 
-    assert result == "Scanned text"
+    assert result == ["Scanned text"]
 
 
-def test_extract_multi_page_joined():
+def test_extract_multi_page_returns_one_element_per_page():
     mock_reader = MagicMock()
     mock_reader.readtext.side_effect = [["Page 1 text"], ["Page 2 text"]]
 
@@ -33,6 +33,4 @@ def test_extract_multi_page_joined():
         mock_convert.return_value = [make_pil_image(), make_pil_image()]
         result = extractor.extract("scanned.pdf")
 
-    assert "Page 1 text" in result
-    assert "Page 2 text" in result
-    assert result.count("\n\n") == 1
+    assert result == ["Page 1 text", "Page 2 text"]

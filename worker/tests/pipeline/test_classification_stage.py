@@ -7,10 +7,10 @@ from classification.llm_classifier import LlmClassifier
 from pipeline.classification_stage import ClassificationStage
 
 
-def make_result(idx: int) -> ClassificationResult:
+def make_result(idx: int, category: str = "rent") -> ClassificationResult:
     return ClassificationResult(
         segment_index=idx,
-        category_slug="rent",
+        category_slug=category,
         vendor="Landlord",
         amount=1000.0,
         currency="BRL",
@@ -20,9 +20,13 @@ def make_result(idx: int) -> ClassificationResult:
     )
 
 
-def test_classification_stage_classifies_each_segment():
+def test_classification_stage_flattens_results_from_all_pages():
     classifier = MagicMock(spec=LlmClassifier)
-    classifier.classify.side_effect = [make_result(0), make_result(1)]
+    # Page 0 returns 2 expenses, page 1 returns 1 expense
+    classifier.classify.side_effect = [
+        [make_result(0, "electricity"), make_result(0, "water")],
+        [make_result(1, "rent")],
+    ]
 
     ctx = DocumentContext("d", "u", "/f", "PDF")
     ctx.segments = [
@@ -32,16 +36,15 @@ def test_classification_stage_classifies_each_segment():
 
     ClassificationStage(classifier).process(ctx)
 
-    assert len(ctx._classification_results) == 2
+    assert len(ctx._classification_results) == 3
     assert classifier.classify.call_count == 2
-    # Uses normalised_text when available
     classifier.classify.assert_any_call(0, "seg0 norm")
     classifier.classify.assert_any_call(1, "seg1 norm")
 
 
 def test_classification_stage_falls_back_to_raw_text_when_normalised_empty():
     classifier = MagicMock(spec=LlmClassifier)
-    classifier.classify.return_value = make_result(0)
+    classifier.classify.return_value = [make_result(0)]
 
     ctx = DocumentContext("d", "u", "/f", "PDF")
     ctx.segments = [DocumentSegment(index=0, raw_text="raw text", normalised_text="")]
@@ -49,3 +52,15 @@ def test_classification_stage_falls_back_to_raw_text_when_normalised_empty():
     ClassificationStage(classifier).process(ctx)
 
     classifier.classify.assert_called_once_with(0, "raw text")
+
+
+def test_classification_stage_empty_page_response():
+    classifier = MagicMock(spec=LlmClassifier)
+    classifier.classify.return_value = []
+
+    ctx = DocumentContext("d", "u", "/f", "PDF")
+    ctx.segments = [DocumentSegment(index=0, raw_text="blank page", normalised_text="blank page")]
+
+    ClassificationStage(classifier).process(ctx)
+
+    assert ctx._classification_results == []

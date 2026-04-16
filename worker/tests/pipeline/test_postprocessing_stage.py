@@ -32,6 +32,17 @@ def test_postprocessing_stage_applies_fixes():
     assert result.expense_date == date.today()  # future → today
 
 
+def test_postprocessing_stage_deduplicates():
+    ctx = DocumentContext("d", "u", "/f", "PDF")
+    r1 = make_result()
+    r2 = make_result()  # identical — should be dropped
+    ctx._classification_results = [r1, r2]
+
+    PostprocessingStage().process(ctx)
+
+    assert len(ctx._classification_results) == 1
+
+
 def test_postprocessing_stage_no_results_does_nothing():
     ctx = DocumentContext("d", "u", "/f", "PDF")
     ctx._classification_results = []

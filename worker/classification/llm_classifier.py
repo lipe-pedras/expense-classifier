@@ -9,10 +9,10 @@ from entities.classification_result import ClassificationResult
 _VALID_SLUGS = {"rent", "water", "electricity", "internet", "insurance", "other"}
 
 _SYSTEM_PROMPT = textwrap.dedent("""\
-    You are a financial document classifier. Given a text segment from a bill or receipt,
-    extract the following fields and respond ONLY with valid JSON — no markdown, no explanation.
+    You are a financial document classifier. Given a page from a bill or receipt,
+    extract ALL expenses found and respond ONLY with a valid JSON array — no markdown, no explanation.
 
-    JSON schema:
+    Each element must follow this schema:
     {
       "category_slug": "<one of: rent | water | electricity | internet | insurance | other>",
       "vendor": "<company name or null>",
@@ -23,6 +23,7 @@ _SYSTEM_PROMPT = textwrap.dedent("""\
     }
 
     Rules:
+    - Return an empty array [] if no expenses are found on this page.
     - If you cannot determine a field, use null for strings and 0 for numbers.
     - expense_date must be the date the expense was incurred, not today's date.
     - confidence reflects how certain you are about the classification (1 = certain).
@@ -30,14 +31,14 @@ _SYSTEM_PROMPT = textwrap.dedent("""\
 
 
 class LlmClassifier:
-    """Calls the local Ollama instance to classify a single text segment."""
+    """Calls the local Ollama instance to classify all expenses on a single page."""
 
     def __init__(self, base_url: str, model: str, client: httpx.Client | None = None) -> None:
         self._base_url = base_url.rstrip("/")
         self._model = model
         self._client = client or httpx.Client(timeout=120)
 
-    def classify(self, segment_index: int, text: str) -> ClassificationResult:
+    def classify(self, page_index: int, text: str) -> list[ClassificationResult]:
         payload = {
             "model": self._model,
             "messages": [
@@ -52,15 +53,14 @@ class LlmClassifier:
         )
         response.raise_for_status()
         raw_content: str = response.json()["message"]["content"]
-        return self._parse(segment_index, text, raw_content)
+        return self._parse(page_index, text, raw_content)
 
-    def _parse(self, segment_index: int, raw_text: str, content: str) -> ClassificationResult:
+    def _parse(self, page_index: int, raw_text: str, content: str) -> list[ClassificationResult]:
         try:
             data = json.loads(content)
         except json.JSONDecodeError:
-            # Return a low-confidence fallback rather than crashing
-            return ClassificationResult(
-                segment_index=segment_index,
+            return [ClassificationResult(
+                segment_index=page_index,
                 category_slug="other",
                 vendor=None,
                 amount=0.0,
@@ -68,8 +68,23 @@ class LlmClassifier:
                 expense_date=date.today(),
                 confidence=0.0,
                 raw_text=raw_text,
-            )
+            )]
 
+        # Tolerate a single object instead of an array
+        if isinstance(data, dict):
+            data = [data]
+
+        if not isinstance(data, list):
+            return []
+
+        results: list[ClassificationResult] = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            results.append(self._parse_item(page_index, raw_text, item))
+        return results
+
+    def _parse_item(self, page_index: int, raw_text: str, data: dict) -> ClassificationResult:
         category_slug = data.get("category_slug", "other")
         if category_slug not in _VALID_SLUGS:
             category_slug = "other"
@@ -80,7 +95,7 @@ class LlmClassifier:
             expense_date = date.today()
 
         return ClassificationResult(
-            segment_index=segment_index,
+            segment_index=page_index,
             category_slug=category_slug,
             vendor=data.get("vendor") or None,
             amount=float(data.get("amount") or 0),

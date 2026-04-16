@@ -42,3 +42,20 @@ def fix(result: ClassificationResult) -> ClassificationResult:
         confidence=confidence,
         raw_text=result.raw_text,
     )
+
+
+def deduplicate(results: list[ClassificationResult]) -> list[ClassificationResult]:
+    """
+    Remove duplicate expenses from the list, keeping the first occurrence.
+
+    Two expenses are considered duplicates if they share the same
+    (category_slug, vendor, amount, currency, expense_date).
+    """
+    seen: set[tuple] = set()
+    unique: list[ClassificationResult] = []
+    for r in results:
+        key = (r.category_slug, r.vendor, r.amount, r.currency, r.expense_date)
+        if key not in seen:
+            seen.add(key)
+            unique.append(r)
+    return unique

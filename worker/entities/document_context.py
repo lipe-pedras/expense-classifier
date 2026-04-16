@@ -19,7 +19,9 @@ class DocumentContext:
     file_path: str
     file_type: str  # "PDF" | "IMAGE"
 
-    # Set by the extraction stage
+    # Set by the extraction stage — one string per page
+    raw_pages: list[str] = field(default_factory=list)
+    # Concatenation of raw_pages (kept for backward compat)
     raw_text: str = ""
 
     # Set by the segmentation stage

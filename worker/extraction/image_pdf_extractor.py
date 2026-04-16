@@ -20,11 +20,11 @@ class ImagePdfExtractor(IExtractionStrategy):
     def __init__(self, gpu: bool = True, reader: Optional[easyocr.Reader] = None) -> None:
         self._reader = reader or easyocr.Reader(["en", "pt"], gpu=gpu)
 
-    def extract(self, file_path: str) -> str:
+    def extract(self, file_path: str) -> list[str]:
         images = convert_from_path(file_path, dpi=self.DPI)
         pages: list[str] = []
         for pil_image in images:
             arr = np.array(pil_image.convert("RGB"))
             results = self._reader.readtext(arr, detail=0, paragraph=True)
             pages.append("\n".join(results))
-        return "\n\n".join(pages)
+        return pages

@@ -19,7 +19,7 @@ class ImageExtractor(IExtractionStrategy):
         # Allow injecting a pre-built reader for testing
         self._reader = reader or easyocr.Reader(["en", "pt"], gpu=gpu)
 
-    def extract(self, file_path: str) -> str:
+    def extract(self, file_path: str) -> list[str]:
         image = np.array(Image.open(file_path).convert("RGB"))
         results = self._reader.readtext(image, detail=0, paragraph=True)
-        return "\n".join(results)
+        return ["\n".join(results)]

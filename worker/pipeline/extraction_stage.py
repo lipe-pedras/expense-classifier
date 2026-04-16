@@ -11,4 +11,5 @@ class ExtractionStage(PipelineStage):
 
     def process(self, ctx: DocumentContext) -> None:
         strategy = self._factory.get_strategy(ctx.file_path, ctx.file_type)
-        ctx.raw_text = strategy.extract(ctx.file_path)
+        ctx.raw_pages = strategy.extract(ctx.file_path)
+        ctx.raw_text = "\n\n".join(ctx.raw_pages)

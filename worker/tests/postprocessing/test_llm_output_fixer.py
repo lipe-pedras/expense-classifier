@@ -3,7 +3,7 @@ from datetime import date, timedelta
 import pytest
 
 from entities.classification_result import ClassificationResult
-from postprocessing.llm_output_fixer import fix
+from postprocessing.llm_output_fixer import fix, deduplicate
 
 
 def make_result(**kwargs) -> ClassificationResult:
@@ -83,3 +83,40 @@ def test_none_vendor_stays_none():
     result = make_result(vendor=None)
     fixed = fix(result)
     assert fixed.vendor is None
+
+
+# --- deduplicate ---
+
+def test_deduplicate_removes_exact_duplicates():
+    r1 = make_result()
+    r2 = make_result()  # identical key
+    assert deduplicate([r1, r2]) == [r1]
+
+
+def test_deduplicate_keeps_different_amounts():
+    r1 = make_result(amount=100.0)
+    r2 = make_result(amount=200.0)
+    assert len(deduplicate([r1, r2])) == 2
+
+
+def test_deduplicate_keeps_different_categories():
+    r1 = make_result(category_slug="rent")
+    r2 = make_result(category_slug="water")
+    assert len(deduplicate([r1, r2])) == 2
+
+
+def test_deduplicate_keeps_different_vendors():
+    r1 = make_result(vendor="Acme")
+    r2 = make_result(vendor="OtherCo")
+    assert len(deduplicate([r1, r2])) == 2
+
+
+def test_deduplicate_empty_list():
+    assert deduplicate([]) == []
+
+
+def test_deduplicate_preserves_order_and_keeps_first():
+    r1 = make_result(confidence=0.9)
+    r2 = make_result(confidence=0.5)  # same key, different confidence
+    result = deduplicate([r1, r2])
+    assert result == [r1]
