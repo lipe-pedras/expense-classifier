@@ -55,13 +55,13 @@ $COMPOSE run --rm \
   api npx vitest run --config vitest.integration.config.ts
 TS_EXIT=$?
 
-# echo "[integration] running Python integration tests"
-# $COMPOSE run --rm \
-#   -e REDIS_URL=redis://redis:6379 \
-#   -e OLLAMA_URL=http://ollama:11434 \
-#   -e OLLAMA_MODEL=qwen2.5:7b-instruct-q3_K_M \
-#   worker pytest worker/tests/integration/ -v -m integration
-# PY_EXIT=$?
+echo "[integration] running Python integration tests"
+$COMPOSE run --rm \
+  -e REDIS_URL=redis://redis:6379 \
+  -e OLLAMA_URL=http://ollama:11434 \
+  -e OLLAMA_MODEL=qwen2.5:7b-instruct-q3_K_M \
+  worker pytest worker/tests/integration/ -v -m integration
+PY_EXIT=$?
 
 echo "[integration] TS exit=$TS_EXIT  PY exit=$PY_EXIT"
 exit $(( TS_EXIT | PY_EXIT ))
