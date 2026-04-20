@@ -1,1 +1,33 @@
+# Environment
 .env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# Uploads / storage
+api/uploads/
+worker/uploads/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/

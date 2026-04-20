@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import type { User } from '@prisma/client';
 import type { IUserRepository } from '../repositories/interfaces/IRepository.js';
 import type { IJwtService } from './JwtService.js';

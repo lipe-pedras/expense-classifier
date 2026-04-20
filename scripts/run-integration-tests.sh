@@ -28,7 +28,15 @@ wait_for() {
 
 cleanup() {
   echo "[integration] tearing down"
-  $COMPOSE down -v
+  # Stop containers and remove the network, but NOT volumes — so ollama_dev_data
+  # (the pulled model) persists across runs.
+  $COMPOSE down
+  # Wipe only the volumes that must be clean between runs.
+  docker volume rm \
+    new_ai_expense_postgres_dev_data \
+    new_ai_expense_uploads_dev_data \
+    new_ai_expense_easyocr_dev_cache \
+    2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -60,7 +68,7 @@ $COMPOSE run --rm \
   -e REDIS_URL=redis://redis:6379 \
   -e OLLAMA_URL=http://ollama:11434 \
   -e OLLAMA_MODEL=qwen2.5:7b-instruct-q3_K_M \
-  worker pytest worker/tests/integration/ -v -m integration
+  worker pytest tests/integration/ -v -m integration
 PY_EXIT=$?
 
 echo "[integration] TS exit=$TS_EXIT  PY exit=$PY_EXIT"
