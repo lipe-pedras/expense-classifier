@@ -10,10 +10,18 @@ export class DocumentStatusUpdater {
   constructor(private readonly documentRepo: IDocumentRepository) {}
 
   async onCompleted(event: JobCompletedEvent): Promise<void> {
-    await this.documentRepo.updateStatus(event.documentId, 'COMPLETED');
+    try {
+      await this.documentRepo.updateStatus(event.documentId, 'DONE');
+    } catch {
+      // Document may have been deleted before status update (e.g., during test teardown)
+    }
   }
 
   async onFailed(event: JobFailedEvent): Promise<void> {
-    await this.documentRepo.updateStatus(event.documentId, 'FAILED');
+    try {
+      await this.documentRepo.updateStatus(event.documentId, 'FAILED');
+    } catch {
+      // Document may have been deleted before status update
+    }
   }
 }

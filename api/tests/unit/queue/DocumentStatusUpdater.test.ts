@@ -24,9 +24,9 @@ describe('DocumentStatusUpdater', () => {
   });
 
   describe('onCompleted', () => {
-    it('should set the document status to COMPLETED', async () => {
+    it('should set the document status to DONE', async () => {
       await updater.onCompleted({ jobId: 'j1', documentId: 'doc-1', userId: 'user-1' });
-      expect(repo.updateStatus).toHaveBeenCalledWith('doc-1', 'COMPLETED');
+      expect(repo.updateStatus).toHaveBeenCalledWith('doc-1', 'DONE');
     });
   });
 

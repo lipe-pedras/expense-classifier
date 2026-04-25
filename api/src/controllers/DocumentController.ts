@@ -1,20 +1,33 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import type { DocumentService } from '../services/DocumentService.js';
+import {
+  deleteDocumentSchema,
+  getDocumentSchema,
+  listDocumentsSchema,
+  uploadDocumentSchema,
+} from '../schemas/document.schemas.js';
 
 export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}
 
   registerRoutes(app: FastifyInstance, auth: preHandlerHookHandler): void {
-    app.post('/api/documents', { preHandler: auth }, (req, reply) => this.upload(req, reply));
-    app.get('/api/documents', { preHandler: auth }, (req, reply) => this.list(req, reply));
-    app.get('/api/documents/:id', { preHandler: auth }, (req, reply) => this.getById(req, reply));
-    app.delete('/api/documents/:id', { preHandler: auth }, (req, reply) =>
+    app.post('/api/documents', { preHandler: auth, schema: uploadDocumentSchema }, (req, reply) => this.upload(req, reply));
+    app.get('/api/documents', { preHandler: auth, schema: listDocumentsSchema }, (req, reply) => this.list(req, reply));
+    app.get('/api/documents/:id', { preHandler: auth, schema: getDocumentSchema }, (req, reply) => this.getById(req, reply));
+    app.delete('/api/documents/:id', { preHandler: auth, schema: deleteDocumentSchema }, (req, reply) =>
       this.delete(req, reply),
     );
   }
 
   private async upload(req: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const data = await req.file();
+    let data;
+    try {
+      data = await req.file();
+    } catch {
+      return reply
+        .status(400)
+        .send({ error: { code: 'VALIDATION_ERROR', message: 'No file uploaded' } });
+    }
     if (!data) {
       return reply
         .status(400)

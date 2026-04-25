@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import type { ExportService } from '../services/ExportService.js';
 import type { ExpenseFilters } from '../types/index.js';
+import { exportExpensesSchema } from '../schemas/export.schemas.js';
 
 const XLSX_CONTENT_TYPE =
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -9,7 +10,7 @@ export class ExportController {
   constructor(private readonly exportService: ExportService) {}
 
   registerRoutes(app: FastifyInstance, auth: preHandlerHookHandler): void {
-    app.get('/api/expenses/export', { preHandler: auth }, (req, reply) =>
+    app.get('/api/expenses/export', { preHandler: auth, schema: exportExpensesSchema }, (req, reply) =>
       this.export(req, reply),
     );
   }

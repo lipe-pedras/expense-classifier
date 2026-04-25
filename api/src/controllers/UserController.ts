@@ -1,13 +1,14 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import type { UserService } from '../services/UserService.js';
+import { deleteMeSchema, getMeSchema, updateMeSchema } from '../schemas/user.schemas.js';
 
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   registerRoutes(app: FastifyInstance, auth: preHandlerHookHandler): void {
-    app.get('/api/users/me', { preHandler: auth }, (req, reply) => this.getMe(req, reply));
-    app.put('/api/users/me', { preHandler: auth }, (req, reply) => this.updateMe(req, reply));
-    app.delete('/api/users/me', { preHandler: auth }, (req, reply) => this.deleteMe(req, reply));
+    app.get('/api/users/me', { preHandler: auth, schema: getMeSchema }, (req, reply) => this.getMe(req, reply));
+    app.put('/api/users/me', { preHandler: auth, schema: updateMeSchema }, (req, reply) => this.updateMe(req, reply));
+    app.delete('/api/users/me', { preHandler: auth, schema: deleteMeSchema }, (req, reply) => this.deleteMe(req, reply));
   }
 
   private async getMe(req: FastifyRequest, reply: FastifyReply): Promise<void> {

@@ -68,6 +68,7 @@ export function makeMockServices(): AppServices {
 }
 
 export async function buildTestApp(services: AppServices): Promise<FastifyInstance> {
+  process.env.SWAGGER_ENABLED = 'false';
   const app = await buildApp(services);
   // Silence logger in tests
   app.log.level = 'silent';

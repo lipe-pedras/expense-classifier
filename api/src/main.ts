@@ -70,19 +70,21 @@ async function main(): Promise<void> {
   eventBus.on('job:completed', { handle: (e) => wsNotifier.onCompleted(e) });
   eventBus.on('job:failed', { handle: (e) => wsNotifier.onFailed(e) });
 
-  // BullMQ event subscriptions — the Python worker returns { documentId, userId }
+  // BullMQ event subscriptions — the Python worker returns json.dumps({documentId, userId}).
+  // Node.js workers in BullMQ v5 return already-parsed objects; Python workers return JSON strings.
   queueEvents.on('completed', async ({ jobId, returnvalue }) => {
-    try {
-      const data = JSON.parse(returnvalue ?? '{}') as { documentId?: string; userId?: string };
-      if (data.documentId && data.userId) {
-        await eventBus.emit('job:completed', {
-          jobId,
-          documentId: data.documentId,
-          userId: data.userId,
-        });
-      }
-    } catch {
-      // Malformed return value — nothing to update
+    let data: { documentId?: string; userId?: string } | undefined;
+    if (typeof returnvalue === 'string') {
+      try { data = JSON.parse(returnvalue); } catch { /* malformed */ }
+    } else {
+      data = returnvalue as typeof data;
+    }
+    if (data?.documentId && data?.userId) {
+      await eventBus.emit('job:completed', {
+        jobId,
+        documentId: data.documentId,
+        userId: data.userId,
+      });
     }
   });
 

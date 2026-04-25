@@ -2,6 +2,8 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyWebSocket from '@fastify/websocket';
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
 import type { AuthService } from './services/AuthService.js';
 import type { UserService } from './services/UserService.js';
 import type { CategoryService } from './services/CategoryService.js';
@@ -18,6 +20,7 @@ import { ExpenseController } from './controllers/ExpenseController.js';
 import { ExportController } from './controllers/ExportController.js';
 import { registerErrorHandler } from './errors/errorHandler.js';
 import { buildAuthMiddleware, buildInternalMiddleware } from './middleware/authMiddleware.js';
+import { internalResultSchema } from './schemas/internal.schemas.js';
 
 export interface AppServices {
   authService: AuthService;
@@ -34,6 +37,25 @@ export interface AppServices {
 
 export async function buildApp(services: AppServices): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
+
+  // Swagger must be registered before routes so it can collect schema info.
+  // Controlled via SWAGGER_ENABLED env var — set to 'false' to disable (e.g. in e2e tests).
+  if (process.env.SWAGGER_ENABLED !== 'false') {
+    await app.register(fastifySwagger, {
+      openapi: {
+        info: { title: 'Expense Classifier API', version: '1.0.0' },
+        components: {
+          securitySchemes: {
+            bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+          },
+        },
+      },
+    });
+    await app.register(fastifySwaggerUi, {
+      routePrefix: '/docs',
+      uiConfig: { docExpansion: 'list', deepLinking: false },
+    });
+  }
 
   await app.register(fastifyCors, {
     origin: true, // reflect request origin — fine for single-user dev/prod
@@ -66,7 +88,7 @@ export async function buildApp(services: AppServices): Promise<FastifyInstance> 
   // Internal route (called by the Python worker)
   app.post(
     '/internal/results',
-    { preHandler: internalAuth },
+    { preHandler: internalAuth, schema: internalResultSchema },
     async (req, reply) => {
       const body = req.body as {
         documentId: string;

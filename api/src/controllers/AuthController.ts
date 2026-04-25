@@ -1,13 +1,14 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AuthService } from '../services/AuthService.js';
+import { loginSchema, refreshSchema, registerSchema } from '../schemas/auth.schemas.js';
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   registerRoutes(app: FastifyInstance): void {
-    app.post('/api/auth/register', (req, reply) => this.register(req, reply));
-    app.post('/api/auth/login', (req, reply) => this.login(req, reply));
-    app.post('/api/auth/refresh', (req, reply) => this.refresh(req, reply));
+    app.post('/api/auth/register', { schema: registerSchema }, (req, reply) => this.register(req, reply));
+    app.post('/api/auth/login', { schema: loginSchema }, (req, reply) => this.login(req, reply));
+    app.post('/api/auth/refresh', { schema: refreshSchema }, (req, reply) => this.refresh(req, reply));
   }
 
   private async register(req: FastifyRequest, reply: FastifyReply): Promise<void> {

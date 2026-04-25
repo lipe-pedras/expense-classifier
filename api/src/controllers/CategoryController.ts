@@ -1,13 +1,14 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import type { CategoryService } from '../services/CategoryService.js';
+import { createCategorySchema, deleteCategorySchema, listCategoriesSchema } from '../schemas/category.schemas.js';
 
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   registerRoutes(app: FastifyInstance, auth: preHandlerHookHandler): void {
-    app.get('/api/categories', { preHandler: auth }, (req, reply) => this.list(req, reply));
-    app.post('/api/categories', { preHandler: auth }, (req, reply) => this.create(req, reply));
-    app.delete('/api/categories/:id', { preHandler: auth }, (req, reply) =>
+    app.get('/api/categories', { preHandler: auth, schema: listCategoriesSchema }, (req, reply) => this.list(req, reply));
+    app.post('/api/categories', { preHandler: auth, schema: createCategorySchema }, (req, reply) => this.create(req, reply));
+    app.delete('/api/categories/:id', { preHandler: auth, schema: deleteCategorySchema }, (req, reply) =>
       this.delete(req, reply),
     );
   }

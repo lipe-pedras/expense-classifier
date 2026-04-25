@@ -32,7 +32,7 @@ describe('AuthController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/auth/register',
-        body: { username: 'alice', email: 'alice@example.com', password: 'pw' },
+        body: { username: 'alice', email: 'alice@example.com', password: 'password123' },
       });
 
       expect(res.statusCode).toBe(201);
@@ -41,7 +41,7 @@ describe('AuthController', () => {
       expect(services.authService.register).toHaveBeenCalledWith({
         username: 'alice',
         email: 'alice@example.com',
-        password: 'pw',
+        password: 'password123',
       });
     });
 
@@ -51,7 +51,7 @@ describe('AuthController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/auth/register',
-        body: { username: 'alice', email: 'alice@example.com', password: 'pw' },
+        body: { username: 'alice', email: 'alice@example.com', password: 'password123' },
       });
 
       expect(res.statusCode).toBe(409);
@@ -66,7 +66,7 @@ describe('AuthController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/auth/login',
-        body: { email: 'alice@example.com', password: 'pw' },
+        body: { email: 'alice@example.com', password: 'password123' },
       });
 
       expect(res.statusCode).toBe(200);

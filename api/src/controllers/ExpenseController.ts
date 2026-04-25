@@ -1,19 +1,26 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import type { ExpenseService } from '../services/ExpenseService.js';
 import type { ExpenseFilters } from '../types/index.js';
+import {
+  deleteExpenseSchema,
+  getDashboardSchema,
+  getExpenseSchema,
+  listExpensesSchema,
+  updateExpenseSchema,
+} from '../schemas/expense.schemas.js';
 
 export class ExpenseController {
   constructor(private readonly expenseService: ExpenseService) {}
 
   registerRoutes(app: FastifyInstance, auth: preHandlerHookHandler): void {
     // Static routes must be registered before parametric ones
-    app.get('/api/expenses/dashboard', { preHandler: auth }, (req, reply) =>
+    app.get('/api/expenses/dashboard', { preHandler: auth, schema: getDashboardSchema }, (req, reply) =>
       this.getDashboard(req, reply),
     );
-    app.get('/api/expenses', { preHandler: auth }, (req, reply) => this.list(req, reply));
-    app.get('/api/expenses/:id', { preHandler: auth }, (req, reply) => this.getById(req, reply));
-    app.put('/api/expenses/:id', { preHandler: auth }, (req, reply) => this.update(req, reply));
-    app.delete('/api/expenses/:id', { preHandler: auth }, (req, reply) =>
+    app.get('/api/expenses', { preHandler: auth, schema: listExpensesSchema }, (req, reply) => this.list(req, reply));
+    app.get('/api/expenses/:id', { preHandler: auth, schema: getExpenseSchema }, (req, reply) => this.getById(req, reply));
+    app.put('/api/expenses/:id', { preHandler: auth, schema: updateExpenseSchema }, (req, reply) => this.update(req, reply));
+    app.delete('/api/expenses/:id', { preHandler: auth, schema: deleteExpenseSchema }, (req, reply) =>
       this.delete(req, reply),
     );
   }

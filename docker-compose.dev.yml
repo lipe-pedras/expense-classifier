@@ -59,6 +59,7 @@ services:
       INTERNAL_SERVICE_TOKEN: dev_internal_token
       FILE_UPLOAD_PATH: /app/uploads
       MAX_FILE_SIZE_MB: 20
+      SWAGGER_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy
