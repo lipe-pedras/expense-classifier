@@ -1,13 +1,17 @@
 import type { ReactNode } from 'react';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
 import { Navbar } from './Navbar';
 import { Toaster } from '@/components/ui/Toaster';
 
 export function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Navbar />
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">{children}</main>
+      <Container maxWidth="xl" component="main" sx={{ py: 3 }}>
+        {children}
+      </Container>
       <Toaster />
-    </div>
+    </Box>
   );
 }

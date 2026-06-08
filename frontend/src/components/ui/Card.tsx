@@ -1,33 +1,38 @@
-import type { HTMLAttributes } from 'react';
+import type { ReactNode } from 'react';
+import MuiCard from '@mui/material/Card';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import type { SxProps, Theme } from '@mui/material/styles';
 
-export function Card({ className = '', children, ...rest }: HTMLAttributes<HTMLDivElement>) {
+interface CardProps {
+  children?: ReactNode;
+  sx?: SxProps<Theme>;
+}
+
+export function Card({ children, sx }: CardProps) {
   return (
-    <div className={`rounded-lg border border-gray-200 bg-white shadow-sm ${className}`} {...rest}>
+    <MuiCard variant="outlined" sx={{ overflow: 'visible', ...sx }}>
       {children}
-    </div>
+    </MuiCard>
   );
 }
 
-export function CardHeader({ className = '', children, ...rest }: HTMLAttributes<HTMLDivElement>) {
+export function CardHeader({ children, sx }: CardProps) {
   return (
-    <div className={`border-b border-gray-200 px-5 py-4 ${className}`} {...rest}>
+    <Box sx={{ px: 2.5, py: 2, borderBottom: 1, borderColor: 'divider', ...sx }}>
       {children}
-    </div>
+    </Box>
   );
 }
 
-export function CardTitle({ className = '', children, ...rest }: HTMLAttributes<HTMLHeadingElement>) {
+export function CardTitle({ children, sx }: CardProps) {
   return (
-    <h3 className={`text-base font-semibold text-gray-900 ${className}`} {...rest}>
+    <Typography variant="subtitle1" sx={{ fontWeight: 600, ...sx }}>
       {children}
-    </h3>
+    </Typography>
   );
 }
 
-export function CardContent({ className = '', children, ...rest }: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div className={`px-5 py-4 ${className}`} {...rest}>
-      {children}
-    </div>
-  );
+export function CardContent({ children, sx }: CardProps) {
+  return <Box sx={{ px: 2.5, py: 2, ...sx }}>{children}</Box>;
 }

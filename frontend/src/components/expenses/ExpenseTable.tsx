@@ -9,6 +9,20 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { useQuery } from '@tanstack/react-query';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import Skeleton from '@mui/material/Skeleton';
+import Table from '@mui/material/Table';
+import TableHead from '@mui/material/TableHead';
+import TableBody from '@mui/material/TableBody';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableSortLabel from '@mui/material/TableSortLabel';
+import TablePagination from '@mui/material/TablePagination';
+import Paper from '@mui/material/Paper';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { categoriesApi, expensesApi } from '@/api';
 import { Button } from '@/components/ui/Button';
 import type { Expense, ExpenseFilters } from '@/types';
@@ -55,7 +69,8 @@ export function ExpenseTable({ filters, onExport, exporting }: Props) {
       }),
       col.accessor('vendor', {
         header: 'Vendor',
-        cell: (info) => info.getValue() ?? <span className="text-gray-400">—</span>,
+        cell: (info) =>
+          info.getValue() ?? <Box component="span" sx={{ color: 'text.disabled' }}>—</Box>,
       }),
       col.accessor('categoryId', {
         header: 'Category',
@@ -91,98 +106,90 @@ export function ExpenseTable({ filters, onExport, exporting }: Props) {
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <Stack spacing={1}>
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-10 animate-pulse rounded bg-gray-100" />
+          <Skeleton key={i} variant="rounded" height={40} />
         ))}
-      </div>
+      </Stack>
     );
   }
 
+  const { pageIndex, pageSize } = table.getState().pagination;
+
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
+    <Stack spacing={1.5}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="body2" color="text.secondary">
           {expenses.length} expense{expenses.length !== 1 ? 's' : ''}
-        </p>
-        <Button variant="secondary" size="sm" onClick={onExport} loading={exporting}>
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
+        </Typography>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={onExport}
+          loading={exporting}
+          startIcon={<FileDownloadIcon />}
+        >
           Export XLSX
         </Button>
-      </div>
+      </Box>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
+      <TableContainer component={Paper} variant="outlined">
+        <Table size="small">
+          <TableHead>
             {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id}>
-                {hg.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 ${
-                      header.column.getCanSort() ? 'cursor-pointer select-none hover:text-gray-700' : ''
-                    }`}
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    <span className="flex items-center gap-1">
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getIsSorted() === 'asc' && ' ↑'}
-                      {header.column.getIsSorted() === 'desc' && ' ↓'}
-                    </span>
-                  </th>
-                ))}
-              </tr>
+              <TableRow key={hg.id} sx={{ bgcolor: 'action.hover' }}>
+                {hg.headers.map((header) => {
+                  const sorted = header.column.getIsSorted();
+                  return (
+                    <TableCell key={header.id} sx={{ fontWeight: 600 }}>
+                      {header.column.getCanSort() ? (
+                        <TableSortLabel
+                          active={Boolean(sorted)}
+                          direction={sorted === 'desc' ? 'desc' : 'asc'}
+                          onClick={header.column.getToggleSortingHandler()}
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableSortLabel>
+                      ) : (
+                        flexRender(header.column.columnDef.header, header.getContext())
+                      )}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
             ))}
-          </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
+          </TableHead>
+          <TableBody>
             {table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="py-8 text-center text-sm text-gray-400">
+              <TableRow>
+                <TableCell colSpan={columns.length} align="center" sx={{ py: 4, color: 'text.disabled' }}>
                   No expenses match the current filters
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="hover:bg-gray-50">
+                <TableRow key={row.id} hover>
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-gray-700">
+                    <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-      {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-500">
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              ← Prev
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next →
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
+      <TablePagination
+        component="div"
+        count={expenses.length}
+        page={pageIndex}
+        onPageChange={(_, page) => table.setPageIndex(page)}
+        rowsPerPage={pageSize}
+        onRowsPerPageChange={(e) => table.setPageSize(Number(e.target.value))}
+        rowsPerPageOptions={[10, 20, 50]}
+      />
+    </Stack>
   );
 }

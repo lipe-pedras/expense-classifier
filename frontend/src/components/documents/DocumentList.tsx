@@ -1,8 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import Skeleton from '@mui/material/Skeleton';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import Divider from '@mui/material/Divider';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { documentsApi } from '@/api';
 import { useToastStore } from '@/store/toastStore';
 import { StatusBadge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import type { Document } from '@/types';
 
 function formatDate(iso: string) {
@@ -28,29 +36,33 @@ function DocumentRow({ doc, onDeleted }: { doc: Document; onDeleted: () => void 
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-md px-3 py-2.5 hover:bg-gray-50">
-      <svg className="h-4 w-4 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-      </svg>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-800">{doc.originalName}</p>
-        <p className="text-xs text-gray-400">
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+        px: 1.5,
+        py: 1,
+        borderRadius: 1,
+        '&:hover': { bgcolor: 'action.hover' },
+      }}
+    >
+      <DescriptionOutlinedIcon sx={{ color: 'text.disabled', flexShrink: 0 }} fontSize="small" />
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
+          {doc.originalName}
+        </Typography>
+        <Typography variant="caption" color="text.disabled">
           {formatDate(doc.uploadedAt)} · {doc.expenseCount} expense{doc.expenseCount !== 1 ? 's' : ''}
-        </p>
-      </div>
+        </Typography>
+      </Box>
       <StatusBadge status={doc.status} />
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleDelete}
-        className="flex-shrink-0 text-gray-400 hover:text-red-600"
-        title="Delete document"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-      </Button>
-    </div>
+      <Tooltip title="Delete document">
+        <IconButton size="small" onClick={handleDelete} sx={{ flexShrink: 0 }}>
+          <DeleteOutlineIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Box>
   );
 }
 
@@ -74,25 +86,27 @@ export function DocumentList() {
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <Stack spacing={1} sx={{ px: 1.5 }}>
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-12 animate-pulse rounded-md bg-gray-100" />
+          <Skeleton key={i} variant="rounded" height={48} />
         ))}
-      </div>
+      </Stack>
     );
   }
 
   if (documents.length === 0) {
     return (
-      <p className="py-4 text-center text-sm text-gray-400">No documents yet</p>
+      <Typography variant="body2" color="text.disabled" sx={{ py: 2, textAlign: 'center' }}>
+        No documents yet
+      </Typography>
     );
   }
 
   return (
-    <div className="divide-y divide-gray-100">
+    <Stack divider={<Divider />}>
       {documents.map((doc) => (
         <DocumentRow key={doc.id} doc={doc} onDeleted={onDeleted} />
       ))}
-    </div>
+    </Stack>
   );
 }

@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import Box from '@mui/material/Box';
 import type { DashboardCategoryTotal } from '@/types';
 
 const COLORS = [
@@ -15,9 +16,18 @@ const fmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
 export function CategoryPieChart({ data }: Props) {
   if (data.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-gray-400">
+      <Box
+        sx={{
+          height: 192,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'text.disabled',
+          fontSize: 14,
+        }}
+      >
         No expenses this month
-      </div>
+      </Box>
     );
   }
 
@@ -41,7 +51,11 @@ export function CategoryPieChart({ data }: Props) {
         </Pie>
         <Tooltip formatter={(value: number) => fmt.format(value)} />
         <Legend
-          formatter={(value) => <span className="text-xs text-gray-600">{value}</span>}
+          formatter={(value) => (
+            <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
+              {value}
+            </Box>
+          )}
         />
       </PieChart>
     </ResponsiveContainer>

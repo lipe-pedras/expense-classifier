@@ -7,6 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import Box from '@mui/material/Box';
 import type { DashboardMonthTotal } from '@/types';
 
 interface Props {
@@ -24,9 +25,18 @@ function formatMonth(ym: string) {
 export function MonthlyBarChart({ data }: Props) {
   if (data.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-gray-400">
+      <Box
+        sx={{
+          height: 192,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'text.disabled',
+          fontSize: 14,
+        }}
+      >
         No history data
-      </div>
+      </Box>
     );
   }
 

@@ -1,5 +1,9 @@
 import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import LinearProgress from '@mui/material/LinearProgress';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { documentsApi } from '@/api';
 import { useToastStore } from '@/store/toastStore';
 import { Button } from '@/components/ui/Button';
@@ -54,44 +58,49 @@ export function DocumentUpload() {
   };
 
   return (
-    <label
-      className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-8 transition-colors ${
-        dragging
-          ? 'border-indigo-500 bg-indigo-50'
-          : 'border-gray-300 bg-white hover:border-indigo-400 hover:bg-gray-50'
-      }`}
+    <Box
+      component="label"
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 1.5,
+        p: 4,
+        cursor: 'pointer',
+        borderRadius: 2,
+        border: '2px dashed',
+        borderColor: dragging ? 'primary.main' : 'divider',
+        bgcolor: dragging ? 'action.hover' : 'background.paper',
+        transition: 'border-color 0.2s, background-color 0.2s',
+        '&:hover': { borderColor: 'primary.light', bgcolor: 'action.hover' },
+      }}
     >
       <input
         type="file"
         accept=".pdf,.jpg,.jpeg,.png,.webp,.tiff"
-        className="hidden"
+        hidden
         onChange={onInputChange}
         disabled={uploading}
       />
-      <svg className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-      </svg>
-      <div className="text-center">
-        <p className="text-sm font-medium text-gray-700">
+      <CloudUploadIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
+      <Box sx={{ textAlign: 'center' }}>
+        <Typography variant="body2" sx={{ fontWeight: 500 }}>
           {uploading ? 'Uploading…' : 'Drop a PDF or image here'}
-        </p>
-        <p className="mt-1 text-xs text-gray-400">
+        </Typography>
+        <Typography variant="caption" color="text.disabled">
           PDF, JPEG, PNG, WEBP, TIFF — up to {MAX_MB} MB
-        </p>
-      </div>
+        </Typography>
+      </Box>
       {!uploading && (
-        <Button variant="secondary" size="sm" type="button">
+        <Button variant="secondary" size="sm" component="span">
           Browse files
         </Button>
       )}
-      {uploading && (
-        <div className="h-1 w-full rounded bg-gray-200">
-          <div className="h-1 animate-pulse rounded bg-indigo-500" style={{ width: '60%' }} />
-        </div>
-      )}
-    </label>
+      {uploading && <LinearProgress sx={{ width: '100%' }} />}
+    </Box>
   );
 }

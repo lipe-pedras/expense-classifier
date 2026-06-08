@@ -1,0 +1,504 @@
+classDiagram
+
+%% ═══════════════════════════════════════════════════════════════════════════
+%%  API — Interfaces
+%% ═══════════════════════════════════════════════════════════════════════════
+
+    namespace APIInterfaces {
+        class IRepository {
+            <<interface>>
+            +findById(id) T
+            +delete(id) void
+        }
+        class IUserRepository {
+            <<interface>>
+            +findByEmail(email) User
+            +findByUsername(username) User
+            +create(data) User
+            +update(id, data) User
+            +createWithCategories(user, cats) User
+            +deleteCascade(id) void
+        }
+        class IDocumentRepository {
+            <<interface>>
+            +findByIdForUser(id, userId) Document
+            +findAllByUser(userId) Document[]
+            +create(data) Document
+            +updateStatus(id, status) Document
+            +incrementExpenseCount(id) Document
+        }
+        class IExpenseRepository {
+            <<interface>>
+            +findByIdForUser(id, userId) Expense
+            +findAllByUser(userId, filters) Expense[]
+            +create(data) Expense
+            +update(id, data) Expense
+            +getCurrentMonthByCategory(userId) DashboardCategoryTotal[]
+            +getHistoryByMonth(userId, months) DashboardMonthTotal[]
+        }
+        class ICategoryRepository {
+            <<interface>>
+            +findByIdForUser(id, userId) Category
+            +findBySlugForUser(slug, userId) Category
+            +findAllByUser(userId) Category[]
+            +create(data) Category
+            +createManyForUser(userId, data) void
+        }
+        class IJwtService {
+            <<interface>>
+            +signAccessToken(userId) string
+            +signRefreshToken(userId) string
+            +verifyAccessToken(token) JwtPayload
+            +verifyRefreshToken(token) JwtPayload
+        }
+        class IJobQueueService {
+            <<interface>>
+            +enqueue(payload) void
+        }
+        class IPasswordHasher {
+            <<interface>>
+            +hash(plain) string
+            +compare(plain, hash) boolean
+        }
+        class IEventListener {
+            <<interface>>
+            +handle(event) void
+        }
+        class FileSystemAdapter {
+            <<interface>>
+            +writeFile(path, data) void
+            +mkdir(path, opts) void
+            +unlink(path) void
+        }
+        class IWebSocket {
+            <<interface>>
+            +send(data) void
+        }
+    }
+
+    IRepository <|-- IUserRepository
+    IRepository <|-- IDocumentRepository
+    IRepository <|-- IExpenseRepository
+    IRepository <|-- ICategoryRepository
+
+%% ═══════════════════════════════════════════════════════════════════════════
+%%  API — Repositories
+%% ═══════════════════════════════════════════════════════════════════════════
+
+    namespace APIRepositories {
+        class PrismaRepository {
+            <<abstract>>
+            #prisma: PrismaClient
+        }
+        class UserRepository {
+            +findById(id) User
+            +findByEmail(email) User
+            +findByUsername(username) User
+            +create(data) User
+            +update(id, data) User
+            +createWithCategories(user, cats) User
+            +deleteCascade(id) void
+        }
+        class DocumentRepository {
+            +findById(id) Document
+            +findByIdForUser(id, userId) Document
+            +findAllByUser(userId) Document[]
+            +create(data) Document
+            +updateStatus(id, status) Document
+            +incrementExpenseCount(id) Document
+        }
+        class ExpenseRepository {
+            +findById(id) Expense
+            +findByIdForUser(id, userId) Expense
+            +findAllByUser(userId, filters) Expense[]
+            +create(data) Expense
+            +update(id, data) Expense
+            +getCurrentMonthByCategory(userId) DashboardCategoryTotal[]
+            +getHistoryByMonth(userId, months) DashboardMonthTotal[]
+        }
+        class CategoryRepository {
+            +findById(id) Category
+            +findByIdForUser(id, userId) Category
+            +findBySlugForUser(slug, userId) Category
+            +findAllByUser(userId) Category[]
+            +create(data) Category
+            +createManyForUser(userId, data) void
+        }
+    }
+
+    PrismaRepository <|-- UserRepository
+    PrismaRepository <|-- DocumentRepository
+    PrismaRepository <|-- ExpenseRepository
+    PrismaRepository <|-- CategoryRepository
+
+    UserRepository ..|> IUserRepository
+    DocumentRepository ..|> IDocumentRepository
+    ExpenseRepository ..|> IExpenseRepository
+    CategoryRepository ..|> ICategoryRepository
+
+%% ═══════════════════════════════════════════════════════════════════════════
+%%  API — Services
+%% ═══════════════════════════════════════════════════════════════════════════
+
+    namespace APIServices {
+        class AuthService {
+            +register(input) AuthResult
+            +login(input) AuthResult
+            +refresh(refreshToken) AuthResult
+        }
+        class BcryptHasher {
+            -rounds: number
+            +hash(plain) string
+            +compare(plain, hash) boolean
+        }
+        class DocumentService {
+            +upload(userId, input) Document
+            +list(userId) Document[]
+            +getById(userId, id) Document
+            +delete(userId, id) void
+            +recordInternalResult(input) Expense
+        }
+        class CategoryService {
+            +list(userId) Category[]
+            +create(userId, input) Category
+            +delete(userId, id) void
+        }
+        class ExpenseService {
+            +list(userId, filters) Expense[]
+            +getById(userId, id) Expense
+            +update(userId, id, input) Expense
+            +delete(userId, id) void
+            +getDashboard(userId, months) DashboardData
+        }
+        class ExportService {
+            +exportExpenses(userId, filters) Buffer
+        }
+        class JwtService {
+            -accessSecret: string
+            -refreshSecret: string
+            +signAccessToken(userId) string
+            +signRefreshToken(userId) string
+            +verifyAccessToken(token) JwtPayload
+            +verifyRefreshToken(token) JwtPayload
+        }
+        class JobQueueService {
+            +enqueue(payload) void
+        }
+        class StorageService {
+            -uploadPath: string
+            +saveUploadedFile(buffer, name) string
+            +deleteFile(path) void
+        }
+        class UserService {
+            +getById(userId) UserView
+            +update(userId, input) UserView
+            +delete(userId) void
+        }
+    }
+
+    BcryptHasher ..|> IPasswordHasher
+    JwtService ..|> IJwtService
+    JobQueueService ..|> IJobQueueService
+
+    AuthService --> IUserRepository
+    AuthService --> IJwtService
+    AuthService --> IPasswordHasher
+
+    DocumentService --> IDocumentRepository
+    DocumentService --> IExpenseRepository
+    DocumentService --> ICategoryRepository
+    DocumentService --> StorageService
+    DocumentService --> IJobQueueService
+
+    StorageService --> FileSystemAdapter
+
+    ExpenseService --> IExpenseRepository
+    ExpenseService --> ICategoryRepository
+
+    ExportService --> IExpenseRepository
+    ExportService --> ICategoryRepository
+    ExportService --> IDocumentRepository
+
+    CategoryService --> ICategoryRepository
+    UserService --> IUserRepository
+
+%% ═══════════════════════════════════════════════════════════════════════════
+%%  API — Controllers
+%% ═══════════════════════════════════════════════════════════════════════════
+
+    namespace APIControllers {
+        class BaseController {
+            <<abstract>>
+            +registerRoutes(app, auth)* void
+            #sendCreated(reply, data) FastifyReply
+            #sendNoContent(reply) FastifyReply
+            #getUserId(req) string
+        }
+        class AuthController {
+            +registerRoutes(app) void
+        }
+        class DocumentController {
+            +registerRoutes(app, auth) void
+        }
+        class CategoryController {
+            +registerRoutes(app, auth) void
+        }
+        class ExpenseController {
+            +registerRoutes(app, auth) void
+        }
+        class ExportController {
+            +registerRoutes(app, auth) void
+        }
+        class UserController {
+            +registerRoutes(app, auth) void
+        }
+    }
+
+    BaseController <|-- AuthController
+    BaseController <|-- DocumentController
+    BaseController <|-- CategoryController
+    BaseController <|-- ExpenseController
+    BaseController <|-- ExportController
+    BaseController <|-- UserController
+
+    AuthController --> AuthService
+    DocumentController --> DocumentService
+    CategoryController --> CategoryService
+    ExpenseController --> ExpenseService
+    ExportController --> ExportService
+    UserController --> UserService
+
+%% ═══════════════════════════════════════════════════════════════════════════
+%%  API — Queue / Events
+%% ═══════════════════════════════════════════════════════════════════════════
+
+    namespace APIQueue {
+        class EventBus {
+            +on(event, listener) void
+            +emit(event, payload) void
+        }
+        class DocumentStatusUpdater {
+            +onCompleted(event) void
+            +onFailed(event) void
+        }
+        class WebSocketNotifier {
+            +register(userId, socket) void
+            +unregister(userId, socket) void
+            +onCompleted(event) void
+            +onFailed(event) void
+        }
+    }
+
+    EventBus o-- IEventListener
+    DocumentStatusUpdater --> IDocumentRepository
+    WebSocketNotifier --> IWebSocket
+
+%% ═══════════════════════════════════════════════════════════════════════════
+%%  Worker — Entities
+%% ═══════════════════════════════════════════════════════════════════════════
+
+    namespace WorkerEntities {
+        class DocumentSegment {
+            <<dataclass>>
+            +index: int
+            +raw_text: str
+            +normalised_text: str
+        }
+        class DocumentContext {
+            <<dataclass>>
+            +document_id: str
+            +user_id: str
+            +file_path: str
+            +file_type: str
+            +raw_pages: list~str~
+            +raw_text: str
+            +segments: list~DocumentSegment~
+            +errors: list~str~
+        }
+        class ClassificationResult {
+            <<dataclass>>
+            +segment_index: int
+            +category_slug: str
+            +vendor: str
+            +amount: float
+            +currency: str
+            +expense_date: date
+            +confidence: float
+            +raw_text: str
+        }
+    }
+
+    DocumentContext *-- DocumentSegment
+
+%% ═══════════════════════════════════════════════════════════════════════════
+%%  Worker — Pipeline
+%% ═══════════════════════════════════════════════════════════════════════════
+
+    namespace WorkerPipeline {
+        class PipelineStage {
+            <<abstract>>
+            +process(ctx)* void
+        }
+        class DocumentPipeline {
+            -stages: list~PipelineStage~
+            +run(ctx) void
+        }
+        class ExtractionStage {
+            +process(ctx) void
+        }
+        class SegmentationStage {
+            +process(ctx) void
+        }
+        class ValidationStage {
+            +process(ctx) void
+        }
+        class PreprocessingStage {
+            +process(ctx) void
+        }
+        class ClassificationStage {
+            +process(ctx) void
+        }
+        class PostprocessingStage {
+            +process(ctx) void
+        }
+        class PersistenceStage {
+            +process(ctx) void
+        }
+    }
+
+    DocumentPipeline *-- PipelineStage
+
+    PipelineStage <|-- ExtractionStage
+    PipelineStage <|-- SegmentationStage
+    PipelineStage <|-- ValidationStage
+    PipelineStage <|-- PreprocessingStage
+    PipelineStage <|-- ClassificationStage
+    PipelineStage <|-- PostprocessingStage
+    PipelineStage <|-- PersistenceStage
+
+%% ═══════════════════════════════════════════════════════════════════════════
+%%  Worker — Extraction
+%% ═══════════════════════════════════════════════════════════════════════════
+
+    namespace WorkerExtraction {
+        class IExtractionStrategy {
+            <<abstract>>
+            +extract(file_path)* list~str~
+        }
+        class ExtractionStrategyFactory {
+            -gpu: bool
+            +get_strategy(file_path, file_type) IExtractionStrategy
+        }
+        class ImageExtractor {
+            +extract(file_path) list~str~
+        }
+        class TextPdfExtractor {
+            +extract(file_path) list~str~
+        }
+        class ImagePdfExtractor {
+            +extract(file_path) list~str~
+        }
+    }
+
+    IExtractionStrategy <|-- ImageExtractor
+    IExtractionStrategy <|-- TextPdfExtractor
+    IExtractionStrategy <|-- ImagePdfExtractor
+    ExtractionStrategyFactory --> IExtractionStrategy
+
+%% ═══════════════════════════════════════════════════════════════════════════
+%%  Worker — Classification & Persistence
+%% ═══════════════════════════════════════════════════════════════════════════
+
+    namespace WorkerOther {
+        class LlmClassifier {
+            -base_url: str
+            -model: str
+            +classify(page_index, text) list~ClassificationResult~
+        }
+        class InternalApiClient {
+            -base_url: str
+            -token: str
+            +post_result(doc_id, user_id, result) void
+        }
+    }
+
+    ExtractionStage --> ExtractionStrategyFactory
+    ClassificationStage --> LlmClassifier
+    LlmClassifier --> ClassificationResult
+    PersistenceStage --> InternalApiClient
+    InternalApiClient --> ClassificationResult
+
+%% ═══════════════════════════════════════════════════════════════════════════
+%%  Frontend — Stores
+%% ═══════════════════════════════════════════════════════════════════════════
+
+    namespace FrontendStores {
+        class AuthState {
+            <<store>>
+            +accessToken: string
+            +refreshToken: string
+            +user: User
+            +isAuthenticated: bool
+            +setAuth(user, access, refresh) void
+            +setTokens(access, refresh) void
+            +logout() void
+        }
+        class ToastState {
+            <<store>>
+            +toasts: Toast[]
+            +addToast(type, message) void
+            +removeToast(id) void
+        }
+    }
+
+%% ═══════════════════════════════════════════════════════════════════════════
+%%  Frontend — API layer
+%% ═══════════════════════════════════════════════════════════════════════════
+
+    namespace FrontendAPI {
+        class ApiClient {
+            <<axios>>
+            +get(url, config) Response
+            +post(url, data, config) Response
+            +put(url, data) Response
+            +delete(url) Response
+        }
+        class authApi {
+            <<module>>
+            +register(data) AuthResult
+            +login(data) AuthResult
+        }
+        class categoriesApi {
+            <<module>>
+            +list() Category[]
+            +create(data) Category
+            +delete(id) void
+        }
+        class documentsApi {
+            <<module>>
+            +upload(file) Document
+            +list() Document[]
+            +delete(id) void
+        }
+        class expensesApi {
+            <<module>>
+            +list(filters) Expense[]
+            +dashboard(months) DashboardData
+            +update(id, data) Expense
+            +delete(id) void
+            +export(filters) void
+        }
+        class useWebSocket {
+            <<hook>>
+            +onMessage(msg) void
+        }
+    }
+
+    ApiClient --> AuthState
+
+    authApi --> ApiClient
+    categoriesApi --> ApiClient
+    documentsApi --> ApiClient
+    expensesApi --> ApiClient
+
+    useWebSocket --> AuthState

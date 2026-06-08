@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import Link from '@mui/material/Link';
+import Alert from '@mui/material/Alert';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { authApi } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import { Input } from '@/components/ui/Input';
@@ -30,18 +36,29 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <svg className="mx-auto h-10 w-10 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
-          </svg>
-          <h1 className="mt-3 text-2xl font-bold text-gray-900">AI Expense Classifier</h1>
-          <p className="mt-1 text-sm text-gray-500">Sign in to your account</p>
-        </div>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bgcolor: 'background.default',
+        px: 2,
+      }}
+    >
+      <Box sx={{ width: '100%', maxWidth: 380 }}>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <ReceiptLongIcon color="primary" sx={{ fontSize: 40 }} />
+          <Typography variant="h5" sx={{ mt: 1.5, fontWeight: 700 }}>
+            AI Expense Classifier
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Sign in to your account
+          </Typography>
+        </Box>
         <Card>
           <CardContent>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <Stack component="form" spacing={2} onSubmit={handleSubmit}>
               <Input
                 label="Email"
                 type="email"
@@ -49,6 +66,7 @@ export function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                fullWidth
               />
               <Input
                 label="Password"
@@ -57,21 +75,22 @@ export function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
+                fullWidth
               />
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <Button type="submit" loading={loading} className="w-full justify-center">
+              {error && <Alert severity="error">{error}</Alert>}
+              <Button type="submit" loading={loading} fullWidth>
                 Sign in
               </Button>
-            </form>
-            <p className="mt-4 text-center text-sm text-gray-500">
+            </Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
               No account?{' '}
-              <Link to="/register" className="font-medium text-indigo-600 hover:underline">
+              <Link component={RouterLink} to="/register" fontWeight={500}>
                 Create one
               </Link>
-            </p>
+            </Typography>
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

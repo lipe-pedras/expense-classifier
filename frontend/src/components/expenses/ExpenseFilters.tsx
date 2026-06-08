@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import Box from '@mui/material/Box';
 import { categoriesApi } from '@/api';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -24,13 +25,13 @@ export function ExpenseFilters({ filters, onChange }: Props) {
   const hasFilters = Object.values(filters).some(Boolean);
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 1.5 }}>
       <Select
         label="Category"
         value={filters.categorySlug ?? ''}
         onChange={(e) => set('categorySlug', e.target.value)}
         placeholder="All categories"
-        className="w-44"
+        sx={{ width: 176 }}
       >
         {categories.map((c) => (
           <option key={c.id} value={c.slug}>
@@ -44,7 +45,7 @@ export function ExpenseFilters({ filters, onChange }: Props) {
         placeholder="Search vendor…"
         value={filters.vendor ?? ''}
         onChange={(e) => set('vendor', e.target.value)}
-        className="w-40"
+        sx={{ width: 160 }}
       />
 
       <Input
@@ -52,7 +53,8 @@ export function ExpenseFilters({ filters, onChange }: Props) {
         type="date"
         value={filters.dateFrom ?? ''}
         onChange={(e) => set('dateFrom', e.target.value)}
-        className="w-36"
+        InputLabelProps={{ shrink: true }}
+        sx={{ width: 144 }}
       />
 
       <Input
@@ -60,7 +62,8 @@ export function ExpenseFilters({ filters, onChange }: Props) {
         type="date"
         value={filters.dateTo ?? ''}
         onChange={(e) => set('dateTo', e.target.value)}
-        className="w-36"
+        InputLabelProps={{ shrink: true }}
+        sx={{ width: 144 }}
       />
 
       <Input
@@ -69,7 +72,7 @@ export function ExpenseFilters({ filters, onChange }: Props) {
         placeholder="0"
         value={filters.minAmount ?? ''}
         onChange={(e) => set('minAmount', e.target.value)}
-        className="w-28"
+        sx={{ width: 112 }}
       />
 
       <Input
@@ -78,7 +81,7 @@ export function ExpenseFilters({ filters, onChange }: Props) {
         placeholder="∞"
         value={filters.maxAmount ?? ''}
         onChange={(e) => set('maxAmount', e.target.value)}
-        className="w-28"
+        sx={{ width: 112 }}
       />
 
       {hasFilters && (
@@ -86,6 +89,6 @@ export function ExpenseFilters({ filters, onChange }: Props) {
           Clear
         </Button>
       )}
-    </div>
+    </Box>
   );
 }
