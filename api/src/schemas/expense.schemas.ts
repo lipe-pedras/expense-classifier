@@ -61,6 +61,28 @@ export const getDashboardSchema = {
   },
 } as const;
 
+export const createExpenseSchema = {
+  tags: ['Expenses'],
+  summary: 'Manually create an expense',
+  security: bearerAuth,
+  body: {
+    type: 'object',
+    properties: {
+      amount: { type: 'number' },
+      currency: { type: 'string' },
+      expenseDate: { type: 'string', format: 'date-time' },
+      vendor: { type: ['string', 'null'] },
+      categoryId: { type: 'string' },
+    },
+    required: ['amount', 'expenseDate', 'categoryId'],
+  },
+  response: {
+    201: expenseSchema,
+    401: errorSchema,
+    404: errorSchema,
+  },
+} as const;
+
 export const getExpenseSchema = {
   tags: ['Expenses'],
   summary: 'Get an expense by ID',

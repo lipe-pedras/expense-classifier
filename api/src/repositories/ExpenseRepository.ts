@@ -56,6 +56,11 @@ export class ExpenseRepository
     });
   }
 
+  async deleteByDocumentId(documentId: string): Promise<number> {
+    const { count } = await this.prisma.expense.deleteMany({ where: { documentId } });
+    return count;
+  }
+
   create(data: CreateExpenseInput): Promise<Expense> {
     return this.prisma.expense.create({ data });
   }

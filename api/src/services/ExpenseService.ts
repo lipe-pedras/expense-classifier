@@ -4,6 +4,14 @@ import type {
   ICategoryRepository,
   UpdateExpenseInput,
 } from '../repositories/interfaces/IRepository.js';
+
+export interface CreateManualExpenseInput {
+  amount: number;
+  currency?: string;
+  expenseDate: Date;
+  vendor?: string | null;
+  categoryId: string;
+}
 import {
   ExpenseNotFoundError,
   CategoryNotFoundError,
@@ -18,6 +26,24 @@ export class ExpenseService {
 
   list(userId: string, filters: ExpenseFilters = {}): Promise<Expense[]> {
     return this.expenseRepo.findAllByUser(userId, filters);
+  }
+
+  async create(userId: string, input: CreateManualExpenseInput): Promise<Expense> {
+    const category = await this.categoryRepo.findByIdForUser(input.categoryId, userId);
+    if (!category) throw new CategoryNotFoundError();
+
+    return this.expenseRepo.create({
+      userId,
+      documentId: null,
+      categoryId: input.categoryId,
+      segmentIndex: 0,
+      amount: input.amount,
+      currency: input.currency ?? 'BRL',
+      expenseDate: input.expenseDate,
+      vendor: input.vendor ?? null,
+      confidence: 1,
+      rawText: '',
+    });
   }
 
   async getById(userId: string, expenseId: string): Promise<Expense> {

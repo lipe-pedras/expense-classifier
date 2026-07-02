@@ -45,7 +45,7 @@ model Document {
 
 model Expense {
   id           String   @id @default(cuid())
-  documentId   String
+  documentId   String?
   userId       String
   categoryId   String
   segmentIndex Int      @default(0)
@@ -56,7 +56,7 @@ model Expense {
   confidence   Float
   rawText      String   @db.Text
   createdAt    DateTime @default(now())
-  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document     Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
   category     Category @relation(fields: [categoryId], references: [id])
   user         User     @relation(fields: [userId], references: [id])
 }

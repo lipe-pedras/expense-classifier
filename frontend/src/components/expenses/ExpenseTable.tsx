@@ -8,7 +8,7 @@ import {
   createColumnHelper,
   type SortingState,
 } from '@tanstack/react-table';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -22,8 +22,14 @@ import TableContainer from '@mui/material/TableContainer';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import TablePagination from '@mui/material/TablePagination';
 import Paper from '@mui/material/Paper';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { categoriesApi, expensesApi } from '@/api';
+import { useToastStore } from '@/store/toastStore';
 import { Button } from '@/components/ui/Button';
 import type { Expense, ExpenseFilters } from '@/types';
 
@@ -40,15 +46,31 @@ interface Props {
   filters: ExpenseFilters;
   onExport: () => void;
   exporting: boolean;
+  onAdd: () => void;
+  onEdit: (expense: Expense) => void;
 }
 
-export function ExpenseTable({ filters, onExport, exporting }: Props) {
+export function ExpenseTable({ filters, onExport, exporting, onAdd, onEdit }: Props) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const { addToast } = useToastStore();
+  const qc = useQueryClient();
 
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ['expenses', filters],
     queryFn: () => expensesApi.list(filters),
   });
+
+  const handleDelete = async (expense: Expense) => {
+    if (!confirm('Delete this expense? This only removes the expense, not its document.')) return;
+    try {
+      await expensesApi.delete(expense.id);
+      addToast('success', 'Expense deleted.');
+      qc.invalidateQueries({ queryKey: ['expenses'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    } catch {
+      addToast('error', 'Failed to delete the expense.');
+    }
+  };
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -89,7 +111,26 @@ export function ExpenseTable({ filters, onExport, exporting }: Props) {
         header: 'Conf.',
         cell: (info) => `${Math.round(info.getValue() * 100)}%`,
       }),
+      col.display({
+        id: 'actions',
+        header: '',
+        cell: (info) => (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Tooltip title="Edit expense">
+              <IconButton size="small" onClick={() => onEdit(info.row.original)}>
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete expense">
+              <IconButton size="small" onClick={() => handleDelete(info.row.original)}>
+                <DeleteOutlineIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
+      }),
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [categoryById],
   );
 
@@ -122,15 +163,20 @@ export function ExpenseTable({ filters, onExport, exporting }: Props) {
         <Typography variant="body2" color="text.secondary">
           {expenses.length} expense{expenses.length !== 1 ? 's' : ''}
         </Typography>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onExport}
-          loading={exporting}
-          startIcon={<FileDownloadIcon />}
-        >
-          Export XLSX
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button size="sm" onClick={onAdd} startIcon={<AddIcon />}>
+            Add expense
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onExport}
+            loading={exporting}
+            startIcon={<FileDownloadIcon />}
+          >
+            Export XLSX
+          </Button>
+        </Box>
       </Box>
 
       <TableContainer component={Paper} variant="outlined">

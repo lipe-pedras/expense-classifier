@@ -18,6 +18,7 @@ export function makeMockServices(): AppServices {
     userService: {
       getById: vi.fn(),
       update: vi.fn(),
+      changePassword: vi.fn(),
       delete: vi.fn(),
     } as unknown as AppServices['userService'],
 
@@ -37,6 +38,7 @@ export function makeMockServices(): AppServices {
 
     expenseService: {
       list: vi.fn(),
+      create: vi.fn(),
       getById: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),

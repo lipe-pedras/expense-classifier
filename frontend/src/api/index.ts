@@ -2,10 +2,12 @@ import { apiClient } from './client';
 import type {
   AuthResult,
   Category,
+  CreateExpensePayload,
   Document,
   Expense,
   DashboardData,
   ExpenseFilters,
+  User,
 } from '@/types';
 
 export const authApi = {
@@ -36,9 +38,19 @@ export const documentsApi = {
   delete: (id: string) => apiClient.delete(`/api/documents/${id}`),
 };
 
+export const usersApi = {
+  me: () => apiClient.get<User>('/api/users/me').then((r) => r.data),
+  update: (data: { username?: string; email?: string }) =>
+    apiClient.put<User>('/api/users/me', data).then((r) => r.data),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    apiClient.put('/api/users/me/password', data),
+};
+
 export const expensesApi = {
   list: (filters?: ExpenseFilters) =>
     apiClient.get<Expense[]>('/api/expenses', { params: filters }).then((r) => r.data),
+  create: (data: CreateExpensePayload) =>
+    apiClient.post<Expense>('/api/expenses', data).then((r) => r.data),
   dashboard: (months = 6) =>
     apiClient
       .get<DashboardData>('/api/expenses/dashboard', { params: { months } })

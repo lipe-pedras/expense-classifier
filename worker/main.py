@@ -60,16 +60,42 @@ async def process_job(job, job_token=None):
     )
 
     pipeline = build_pipeline()
-    pipeline.run(ctx)
+    # pipeline.run is fully synchronous (OCR + blocking Ollama HTTP call). Running
+    # it inline would starve the asyncio loop and prevent BullMQ from renewing the
+    # job lock, causing the job to be marked "stalled" and reprocessed — which
+    # duplicates expenses on the slow first (cold-model) document. Offload it to a
+    # worker thread so the loop stays free to renew the lock.
+    await asyncio.to_thread(pipeline.run, ctx)
 
     logger.info("Job %s completed — %d segment(s)", job.id, len(ctx.segments))
     # Return value is picked up by QueueEvents on the API side
     return json.dumps({"documentId": ctx.document_id, "userId": ctx.user_id})
 
 
+async def prewarm_ollama() -> None:
+    """Trigger the cold model load up-front so the first real job isn't slow."""
+    try:
+        classifier = LlmClassifier(base_url=config.ollama_url, model=config.ollama_model)
+        await asyncio.to_thread(classifier.classify, 0, "warmup")
+        logger.info("Ollama model pre-warmed")
+    except Exception as exc:  # best-effort; never block startup
+        logger.warning("Ollama pre-warm failed (will warm on first job): %s", exc)
+
+
 async def main() -> None:
     logger.info("Starting worker, connecting to Redis at %s", config.redis_url)
-    Worker(QUEUE_NAME, process_job, {"connection": config.redis_url})
+    await prewarm_ollama()
+    Worker(
+        QUEUE_NAME,
+        process_job,
+        {
+            "connection": config.redis_url,
+            "concurrency": 1,
+            # Generous lock margin so an unusually slow inference can never be
+            # mistaken for a stalled job and reprocessed.
+            "lockDuration": 300_000,
+        },
+    )
     logger.info("Worker listening on queue '%s'", QUEUE_NAME)
     # bullmq Worker starts its own asyncio task on __init__; keep the loop alive
     await asyncio.Future()

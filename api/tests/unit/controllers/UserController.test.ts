@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildTestApp, makeMockServices, type AppServices } from '../../helpers/testApp.js';
-import { UserNotFoundError } from '../../../src/errors/AppError.js';
+import { AuthInvalidCredentialsError, UserNotFoundError } from '../../../src/errors/AppError.js';
 
 const userView = {
   id: 'user-1',
@@ -56,6 +56,52 @@ describe('UserController', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.json().email).toBe('new@example.com');
+    });
+  });
+
+  describe('PUT /api/users/me/password', () => {
+    it('should return 204 on success', async () => {
+      (services.userService.changePassword as any).mockResolvedValue(undefined);
+
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/users/me/password',
+        headers: AUTH,
+        body: { currentPassword: 'old-pw', newPassword: 'new-password' },
+      });
+
+      expect(res.statusCode).toBe(204);
+      expect(services.userService.changePassword).toHaveBeenCalledWith(
+        'user-1',
+        'old-pw',
+        'new-password',
+      );
+    });
+
+    it('should return 401 when the current password is wrong', async () => {
+      (services.userService.changePassword as any).mockRejectedValue(
+        new AuthInvalidCredentialsError(),
+      );
+
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/users/me/password',
+        headers: AUTH,
+        body: { currentPassword: 'wrong', newPassword: 'new-password' },
+      });
+
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('should return 400 when newPassword is too short', async () => {
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/users/me/password',
+        headers: AUTH,
+        body: { currentPassword: 'old-pw', newPassword: 'short' },
+      });
+
+      expect(res.statusCode).toBe(400);
     });
   });
 

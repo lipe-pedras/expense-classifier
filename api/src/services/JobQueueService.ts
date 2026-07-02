@@ -19,11 +19,10 @@ export class JobQueueService implements IJobQueueService {
   constructor(private readonly queue: Queue) {}
 
   async enqueue(payload: DocumentJobPayload): Promise<void> {
-    // 3 attempts with a custom backoff strategy [1s, 5s, 30s] that the
-    // Worker registers under the name 'document-backoff'.
+    // Retry failed jobs up to 3 times with exponential backoff starting at 1s.
     await this.queue.add(DOCUMENT_JOB_NAME, payload, {
       attempts: 3,
-      backoff: { type: 'document-backoff' },
+      backoff: { type: 'exponential', delay: 1000 },
       removeOnComplete: true,
       removeOnFail: false,
     });

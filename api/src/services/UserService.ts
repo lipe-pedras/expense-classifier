@@ -1,6 +1,12 @@
 import type { User } from '@prisma/client';
 import type { IUserRepository } from '../repositories/interfaces/IRepository.js';
-import { UserNotFoundError, UserEmailTakenError, UserUsernameTakenError } from '../errors/AppError.js';
+import type { IPasswordHasher } from './AuthService.js';
+import {
+  UserNotFoundError,
+  UserEmailTakenError,
+  UserUsernameTakenError,
+  AuthInvalidCredentialsError,
+} from '../errors/AppError.js';
 
 export interface UpdateUserInput {
   username?: string;
@@ -10,7 +16,10 @@ export interface UpdateUserInput {
 export type UserView = Pick<User, 'id' | 'username' | 'email' | 'createdAt'>;
 
 export class UserService {
-  constructor(private readonly userRepo: IUserRepository) {}
+  constructor(
+    private readonly userRepo: IUserRepository,
+    private readonly hasher: IPasswordHasher,
+  ) {}
 
   async getById(userId: string): Promise<UserView> {
     const user = await this.userRepo.findById(userId);
@@ -33,6 +42,21 @@ export class UserService {
 
     const updated = await this.userRepo.update(userId, input);
     return this.toView(updated);
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.userRepo.findById(userId);
+    if (!user) throw new UserNotFoundError();
+
+    const ok = await this.hasher.compare(currentPassword, user.passwordHash);
+    if (!ok) throw new AuthInvalidCredentialsError('Current password is incorrect');
+
+    const passwordHash = await this.hasher.hash(newPassword);
+    await this.userRepo.update(userId, { passwordHash });
   }
 
   async delete(userId: string): Promise<void> {

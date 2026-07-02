@@ -85,6 +85,18 @@ export async function buildApp(services: AppServices): Promise<FastifyInstance> 
   new ExportController(services.exportService).registerRoutes(app, auth);
   new ExpenseController(services.expenseService).registerRoutes(app, auth);
 
+  // Internal route (called by the Python worker) — clears any prior expenses for
+  // the document before a job persists its results, making reprocessing idempotent.
+  app.post(
+    '/internal/documents/:documentId/reset',
+    { preHandler: internalAuth },
+    async (req, reply) => {
+      const { documentId } = req.params as { documentId: string };
+      await services.documentService.resetDocumentResults(documentId);
+      reply.status(204).send();
+    },
+  );
+
   // Internal route (called by the Python worker)
   app.post(
     '/internal/results',

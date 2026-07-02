@@ -14,6 +14,18 @@ class InternalApiClient:
         self._token = token
         self._client = client or httpx.Client(timeout=30)
 
+    def reset_document(self, document_id: str) -> None:
+        """
+        Clear any expenses left over from a previous run of this document before
+        persisting a fresh batch. Makes (re)processing idempotent so a stalled-and-
+        reprocessed job replaces its expenses instead of duplicating them.
+        """
+        response = self._client.post(
+            f"{self._base_url}/internal/documents/{document_id}/reset",
+            headers={"Authorization": f"Bearer {self._token}"},
+        )
+        response.raise_for_status()
+
     def post_result(
         self,
         document_id: str,

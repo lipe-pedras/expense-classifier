@@ -70,6 +70,38 @@ describe('ExpenseController', () => {
     });
   });
 
+  describe('POST /api/expenses', () => {
+    it('should create a manual expense and return 201', async () => {
+      const created = { ...expense, documentId: null };
+      (services.expenseService.create as any).mockResolvedValue(created);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/expenses',
+        headers: AUTH,
+        body: { amount: 100, expenseDate: '2026-01-15T00:00:00.000Z', categoryId: 'cat-1' },
+      });
+
+      expect(res.statusCode).toBe(201);
+      expect(res.json().documentId).toBeNull();
+      expect(services.expenseService.create).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({ amount: 100, categoryId: 'cat-1' }),
+      );
+    });
+
+    it('should return 400 when required fields are missing', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/expenses',
+        headers: AUTH,
+        body: { amount: 100 },
+      });
+
+      expect(res.statusCode).toBe(400);
+    });
+  });
+
   describe('GET /api/expenses/dashboard', () => {
     it('should return dashboard data with default 6 months', async () => {
       (services.expenseService.getDashboard as any).mockResolvedValue(dashboardData);

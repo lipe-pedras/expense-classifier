@@ -39,6 +39,7 @@ function makeExpenseRepo(): IExpenseRepository {
     findByIdForUser: vi.fn(),
     findAllByUser: vi.fn(),
     findByDocument: vi.fn(),
+    deleteByDocumentId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -76,6 +77,45 @@ describe('ExpenseService', () => {
 
       await expect(service.list('user-1', filters)).resolves.toEqual([fakeExpense]);
       expect(expenseRepo.findAllByUser).toHaveBeenCalledWith('user-1', filters);
+    });
+  });
+
+  describe('create', () => {
+    it('should create a manual expense with no document when the category is owned', async () => {
+      (categoryRepo.findByIdForUser as any).mockResolvedValue(otherCategory);
+      (expenseRepo.create as any).mockImplementation((data: any) => ({ ...fakeExpense, ...data }));
+
+      const date = new Date('2026-02-01');
+      const result = await service.create('user-1', {
+        amount: 42,
+        expenseDate: date,
+        categoryId: 'cat-2',
+        vendor: 'Manual Co',
+      });
+
+      expect(categoryRepo.findByIdForUser).toHaveBeenCalledWith('cat-2', 'user-1');
+      expect(expenseRepo.create).toHaveBeenCalledWith({
+        userId: 'user-1',
+        documentId: null,
+        categoryId: 'cat-2',
+        segmentIndex: 0,
+        amount: 42,
+        currency: 'BRL',
+        expenseDate: date,
+        vendor: 'Manual Co',
+        confidence: 1,
+        rawText: '',
+      });
+      expect(result.documentId).toBeNull();
+    });
+
+    it('should throw CategoryNotFoundError when the category is not owned by the user', async () => {
+      (categoryRepo.findByIdForUser as any).mockResolvedValue(null);
+
+      await expect(
+        service.create('user-1', { amount: 10, expenseDate: new Date(), categoryId: 'cat-x' }),
+      ).rejects.toBeInstanceOf(CategoryNotFoundError);
+      expect(expenseRepo.create).not.toHaveBeenCalled();
     });
   });
 

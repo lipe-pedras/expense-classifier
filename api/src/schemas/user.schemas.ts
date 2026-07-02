@@ -30,6 +30,25 @@ export const updateMeSchema = {
   },
 } as const;
 
+export const changePasswordSchema = {
+  tags: ['Users'],
+  summary: 'Change the authenticated user password',
+  security: bearerAuth,
+  body: {
+    type: 'object',
+    properties: {
+      currentPassword: { type: 'string', minLength: 1 },
+      newPassword: { type: 'string', minLength: 8 },
+    },
+    required: ['currentPassword', 'newPassword'],
+  },
+  response: {
+    204: { type: 'null' },
+    401: errorSchema,
+    404: errorSchema,
+  },
+} as const;
+
 export const deleteMeSchema = {
   tags: ['Users'],
   summary: 'Delete the authenticated user account',

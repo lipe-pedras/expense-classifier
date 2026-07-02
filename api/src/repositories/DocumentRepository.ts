@@ -39,6 +39,13 @@ export class DocumentRepository
     });
   }
 
+  resetExpenseCount(id: string): Promise<Document> {
+    return this.prisma.document.update({
+      where: { id },
+      data: { expenseCount: 0 },
+    });
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.document.delete({ where: { id } });
   }

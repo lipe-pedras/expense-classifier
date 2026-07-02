@@ -17,5 +17,9 @@ class PersistenceStage(PipelineStage):
 
     def process(self, ctx: DocumentContext) -> None:
         results = getattr(ctx, "_classification_results", [])
+        # Clear any prior results for this document first so a reprocessed job
+        # (e.g. one that was mistakenly marked stalled) replaces rather than
+        # duplicates its expenses.
+        self._client.reset_document(ctx.document_id)
         for result in results:
             self._client.post_result(ctx.document_id, ctx.user_id, result)

@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandl
 import type { ExpenseService } from '../services/ExpenseService.js';
 import type { ExpenseFilters } from '../types/index.js';
 import {
+  createExpenseSchema,
   deleteExpenseSchema,
   getDashboardSchema,
   getExpenseSchema,
@@ -18,6 +19,7 @@ export class ExpenseController {
       this.getDashboard(req, reply),
     );
     app.get('/api/expenses', { preHandler: auth, schema: listExpensesSchema }, (req, reply) => this.list(req, reply));
+    app.post('/api/expenses', { preHandler: auth, schema: createExpenseSchema }, (req, reply) => this.create(req, reply));
     app.get('/api/expenses/:id', { preHandler: auth, schema: getExpenseSchema }, (req, reply) => this.getById(req, reply));
     app.put('/api/expenses/:id', { preHandler: auth, schema: updateExpenseSchema }, (req, reply) => this.update(req, reply));
     app.delete('/api/expenses/:id', { preHandler: auth, schema: deleteExpenseSchema }, (req, reply) =>
@@ -44,6 +46,21 @@ export class ExpenseController {
     const months = q.months ? Number(q.months) : 6;
     const data = await this.expenseService.getDashboard(req.userId, months);
     reply.send(data);
+  }
+
+  private async create(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const body = req.body as {
+      amount: number;
+      currency?: string;
+      expenseDate: string;
+      vendor?: string | null;
+      categoryId: string;
+    };
+    const expense = await this.expenseService.create(req.userId, {
+      ...body,
+      expenseDate: new Date(body.expenseDate),
+    });
+    reply.status(201).send(expense);
   }
 
   private async getById(req: FastifyRequest, reply: FastifyReply): Promise<void> {

@@ -47,7 +47,7 @@ async function main(): Promise<void> {
   const jobQueue = new JobQueueService(queue);
 
   const authService = new AuthService(userRepo, jwtService, hasher);
-  const userService = new UserService(userRepo);
+  const userService = new UserService(userRepo, hasher);
   const categoryService = new CategoryService(categoryRepo);
   const documentService = new DocumentService(
     documentRepo,

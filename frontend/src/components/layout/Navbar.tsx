@@ -3,7 +3,9 @@ import Toolbar from '@mui/material/Toolbar';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
+import Link from '@mui/material/Link';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import { Link as RouterLink } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 
@@ -19,9 +21,15 @@ export function Navbar() {
             AI Expense Classifier
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" color="text.secondary">
+            <Link
+              component={RouterLink}
+              to="/profile"
+              variant="body2"
+              color="text.secondary"
+              underline="hover"
+            >
               {user?.username}
-            </Typography>
+            </Link>
             <Button variant="secondary" size="sm" onClick={logout}>
               Sign out
             </Button>

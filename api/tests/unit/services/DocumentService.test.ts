@@ -57,6 +57,7 @@ function makeDocumentRepo(): IDocumentRepository {
     create: vi.fn(),
     updateStatus: vi.fn(),
     incrementExpenseCount: vi.fn(),
+    resetExpenseCount: vi.fn(),
     delete: vi.fn(),
   };
 }
@@ -66,6 +67,7 @@ function makeExpenseRepo(): IExpenseRepository {
     findByIdForUser: vi.fn(),
     findAllByUser: vi.fn(),
     findByDocument: vi.fn(),
+    deleteByDocumentId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -272,6 +274,26 @@ describe('DocumentService', () => {
       await expect(service.recordInternalResult(input)).rejects.toBeInstanceOf(
         CategoryNotFoundError,
       );
+    });
+  });
+
+  describe('resetDocumentResults', () => {
+    it('should clear existing expenses and reset the document counter', async () => {
+      (documentRepo.findById as any).mockResolvedValue(fakeDocument);
+      (expenseRepo.deleteByDocumentId as any).mockResolvedValue(2);
+
+      await service.resetDocumentResults('doc-1');
+
+      expect(expenseRepo.deleteByDocumentId).toHaveBeenCalledWith('doc-1');
+      expect(documentRepo.resetExpenseCount).toHaveBeenCalledWith('doc-1');
+    });
+
+    it('should throw DocumentNotFoundError when the document is missing', async () => {
+      (documentRepo.findById as any).mockResolvedValue(null);
+      await expect(service.resetDocumentResults('doc-1')).rejects.toBeInstanceOf(
+        DocumentNotFoundError,
+      );
+      expect(expenseRepo.deleteByDocumentId).not.toHaveBeenCalled();
     });
   });
 });

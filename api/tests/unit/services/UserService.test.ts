@@ -2,10 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { User } from '@prisma/client';
 import { UserService } from '../../../src/services/UserService.js';
 import type { IUserRepository } from '../../../src/repositories/interfaces/IRepository.js';
+import type { IPasswordHasher } from '../../../src/services/AuthService.js';
 import {
   UserNotFoundError,
   UserEmailTakenError,
   UserUsernameTakenError,
+  AuthInvalidCredentialsError,
 } from '../../../src/errors/AppError.js';
 
 const fakeUser: User = {
@@ -29,13 +31,22 @@ function makeRepo(): IUserRepository {
   };
 }
 
+function makeHasher(): IPasswordHasher {
+  return {
+    hash: vi.fn(),
+    compare: vi.fn(),
+  };
+}
+
 describe('UserService', () => {
   let repo: IUserRepository;
+  let hasher: IPasswordHasher;
   let service: UserService;
 
   beforeEach(() => {
     repo = makeRepo();
-    service = new UserService(repo);
+    hasher = makeHasher();
+    service = new UserService(repo, hasher);
   });
 
   describe('getById', () => {
@@ -101,6 +112,37 @@ describe('UserService', () => {
       await expect(service.update('missing', { email: 'x@x' })).rejects.toBeInstanceOf(
         UserNotFoundError,
       );
+    });
+  });
+
+  describe('changePassword', () => {
+    it('should hash and persist the new password when the current one matches', async () => {
+      (repo.findById as any).mockResolvedValue(fakeUser);
+      (hasher.compare as any).mockResolvedValue(true);
+      (hasher.hash as any).mockResolvedValue('new-hash');
+
+      await service.changePassword('user-1', 'current-pw', 'new-password');
+
+      expect(hasher.compare).toHaveBeenCalledWith('current-pw', fakeUser.passwordHash);
+      expect(hasher.hash).toHaveBeenCalledWith('new-password');
+      expect(repo.update).toHaveBeenCalledWith('user-1', { passwordHash: 'new-hash' });
+    });
+
+    it('should throw AuthInvalidCredentialsError when the current password is wrong', async () => {
+      (repo.findById as any).mockResolvedValue(fakeUser);
+      (hasher.compare as any).mockResolvedValue(false);
+
+      await expect(
+        service.changePassword('user-1', 'wrong-pw', 'new-password'),
+      ).rejects.toBeInstanceOf(AuthInvalidCredentialsError);
+      expect(repo.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw UserNotFoundError when the user does not exist', async () => {
+      (repo.findById as any).mockResolvedValue(null);
+      await expect(
+        service.changePassword('missing', 'a', 'new-password'),
+      ).rejects.toBeInstanceOf(UserNotFoundError);
     });
   });
 

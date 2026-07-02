@@ -34,7 +34,7 @@ export interface Category {
 
 export interface Expense {
   id: string;
-  documentId: string;
+  documentId: string | null;
   userId: string;
   categoryId: string;
   segmentIndex: number;
@@ -70,6 +70,14 @@ export interface ExpenseFilters {
   dateTo?: string;
   minAmount?: string;
   maxAmount?: string;
+}
+
+export interface CreateExpensePayload {
+  amount: number;
+  currency?: string;
+  expenseDate: string;
+  vendor?: string | null;
+  categoryId: string;
 }
 
 export interface WsMessage {

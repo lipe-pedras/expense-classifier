@@ -63,7 +63,7 @@ export const expenseSchema = {
   type: 'object',
   properties: {
     id: { type: 'string' },
-    documentId: { type: 'string' },
+    documentId: { type: ['string', 'null'] },
     userId: { type: 'string' },
     categoryId: { type: 'string' },
     segmentIndex: { type: 'number' },
@@ -75,7 +75,7 @@ export const expenseSchema = {
     rawText: { type: 'string' },
     createdAt: { type: 'string', format: 'date-time' },
   },
-  required: ['id', 'documentId', 'userId', 'categoryId', 'segmentIndex', 'amount', 'currency', 'expenseDate', 'confidence', 'rawText', 'createdAt'],
+  required: ['id', 'userId', 'categoryId', 'segmentIndex', 'amount', 'currency', 'expenseDate', 'confidence', 'rawText', 'createdAt'],
 } as const;
 
 export const expenseFiltersQuerySchema = {

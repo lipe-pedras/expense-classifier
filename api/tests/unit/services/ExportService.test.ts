@@ -48,6 +48,7 @@ function makeExpenseRepo(): IExpenseRepository {
     findByIdForUser: vi.fn(),
     findAllByUser: vi.fn(),
     findByDocument: vi.fn(),
+    deleteByDocumentId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -74,6 +75,7 @@ function makeDocumentRepo(): IDocumentRepository {
     create: vi.fn(),
     updateStatus: vi.fn(),
     incrementExpenseCount: vi.fn(),
+    resetExpenseCount: vi.fn(),
     delete: vi.fn(),
   };
 }

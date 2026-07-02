@@ -13,7 +13,8 @@ import { DocumentUpload } from '@/components/documents/DocumentUpload';
 import { DocumentList } from '@/components/documents/DocumentList';
 import { ExpenseFilters } from '@/components/expenses/ExpenseFilters';
 import { ExpenseTable } from '@/components/expenses/ExpenseTable';
-import type { ExpenseFilters as Filters, WsMessage } from '@/types';
+import { ExpenseFormDialog } from '@/components/expenses/ExpenseFormDialog';
+import type { Expense, ExpenseFilters as Filters, WsMessage } from '@/types';
 
 const currFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -38,8 +39,19 @@ function StatCard({ label, value, hint }: { label: string; value: string; hint: 
 export function DashboardPage() {
   const [filters, setFilters] = useState<Filters>({});
   const [exporting, setExporting] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Expense | null>(null);
   const { addToast } = useToastStore();
   const qc = useQueryClient();
+
+  const openAdd = () => {
+    setEditing(null);
+    setDialogOpen(true);
+  };
+  const openEdit = (expense: Expense) => {
+    setEditing(expense);
+    setDialogOpen(true);
+  };
 
   const { data: dashboard } = useQuery({
     queryKey: ['dashboard'],
@@ -147,11 +159,23 @@ export function DashboardPage() {
             </CardHeader>
             <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <ExpenseFilters filters={filters} onChange={setFilters} />
-              <ExpenseTable filters={filters} onExport={handleExport} exporting={exporting} />
+              <ExpenseTable
+                filters={filters}
+                onExport={handleExport}
+                exporting={exporting}
+                onAdd={openAdd}
+                onEdit={openEdit}
+              />
             </CardContent>
           </Card>
         </Box>
       </Box>
+
+      <ExpenseFormDialog
+        open={dialogOpen}
+        expense={editing}
+        onClose={() => setDialogOpen(false)}
+      />
     </AppLayout>
   );
 }

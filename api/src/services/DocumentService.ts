@@ -88,6 +88,20 @@ export class DocumentService {
   }
 
   /**
+   * Invoked by the internal route at the start of a job, before any results are
+   * posted, to clear any expenses left over from a previous (possibly partial or
+   * stalled-and-reprocessed) run of the same document. This makes the worker's
+   * persistence step idempotent at the document level: re-running a job replaces
+   * its expenses instead of duplicating them.
+   */
+  async resetDocumentResults(documentId: string): Promise<void> {
+    const document = await this.documentRepo.findById(documentId);
+    if (!document) throw new DocumentNotFoundError();
+    await this.expenseRepo.deleteByDocumentId(documentId);
+    await this.documentRepo.resetExpenseCount(documentId);
+  }
+
+  /**
    * Invoked by the internal service-token-protected route once the worker has
    * classified a segment. Persists the expense and bumps the document counter.
    */

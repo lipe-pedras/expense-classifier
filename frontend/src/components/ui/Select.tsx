@@ -17,6 +17,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       size="small"
       error={Boolean(error)}
       helperText={error ?? helperText}
+      InputLabelProps={placeholder ? { shrink: true } : undefined}
       {...rest}
     >
       {placeholder && <option value="">{placeholder}</option>}

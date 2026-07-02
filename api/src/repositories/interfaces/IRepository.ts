@@ -67,13 +67,14 @@ export interface IDocumentRepository extends IRepository<Document> {
   create(data: CreateDocumentInput): Promise<Document>;
   updateStatus(id: string, status: ProcessingStatus): Promise<Document>;
   incrementExpenseCount(id: string): Promise<Document>;
+  resetExpenseCount(id: string): Promise<Document>;
 }
 
 // ---------- Expense ----------
 
 export interface CreateExpenseInput {
   userId: string;
-  documentId: string;
+  documentId: string | null;
   categoryId: string;
   segmentIndex: number;
   amount: number;
@@ -96,6 +97,8 @@ export interface IExpenseRepository extends IRepository<Expense> {
   findByIdForUser(id: string, userId: string): Promise<Expense | null>;
   findAllByUser(userId: string, filters?: ExpenseFilters): Promise<Expense[]>;
   findByDocument(documentId: string, userId: string): Promise<Expense[]>;
+  /** Removes all expenses for a document. Returns the number deleted. */
+  deleteByDocumentId(documentId: string): Promise<number>;
   create(data: CreateExpenseInput): Promise<Expense>;
   update(id: string, data: UpdateExpenseInput): Promise<Expense>;
   getCurrentMonthByCategory(userId: string): Promise<DashboardCategoryTotal[]>;

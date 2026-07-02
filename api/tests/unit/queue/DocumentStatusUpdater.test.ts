@@ -10,6 +10,7 @@ function makeRepo(): IDocumentRepository {
     create: vi.fn(),
     updateStatus: vi.fn().mockResolvedValue(undefined),
     incrementExpenseCount: vi.fn(),
+    resetExpenseCount: vi.fn(),
     delete: vi.fn(),
   };
 }
