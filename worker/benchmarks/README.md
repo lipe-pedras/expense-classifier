@@ -1,19 +1,34 @@
 # Extraction-engine testbench
 
-Compares the extraction options (`default`, `docling`, `pymupdf4llm`, each CPU &
-GPU) on the boletos in `assets/` — every boleto as a text-native PDF and a
-scanned image PDF — measuring **time** and **accuracy**.
+Compares the extraction options (`default`, `docling`, `pymupdf4llm`/EasyOCR,
+each CPU & GPU) on the synthetic sample documents in `assets/` — every document
+as a text-native PDF and a scanned image PDF — measuring **time** and **accuracy**.
 
 Accuracy is measured two ways:
 
-- **fidelity** — do the known boleto values (per-line-item amounts, due date,
-  payee, barcode digits) survive in the raw extracted text? Deterministic, no LLM.
+- **fidelity** — do the known values (per-line-item amounts, due date, payee,
+  barcode digits) survive in the raw extracted text? Deterministic, no LLM.
 - **e2e** — run the real pipeline minus persistence (extraction → normalization →
   segmentation → Ollama classification → post-processing) and set-match the
   resulting expenses against ground truth.
 
-Ground truth lives in `extraction_benchmark.py` (`GROUND_TRUTH`). A document can
-hold multiple expenses; results are matched by amount (±0.01).
+A document can hold multiple expenses; results are matched by amount (±0.01).
+
+## Sample documents
+
+The `assets/` documents are **generated** (no real personal data) by
+`generate_samples.py`, which also writes `assets/ground_truth.json` (the manifest
+the benchmark reads). The set spans easy → hard: large vs tiny fonts, inline vs
+table layout, 1 vs many expenses, and single vs multi-page documents, with the
+scanned twins degraded (lower DPI, noise, slight rotation) as difficulty rises.
+
+Regenerate (deterministic; `--user` keeps files owned by you, not root):
+
+```bash
+docker compose -f docker-compose.dev.yml run --rm --no-deps \
+  --user "$(id -u):$(id -g)" -v "$PWD/assets:/assets" worker \
+  python benchmarks/generate_samples.py --out-dir /assets
+```
 
 ## Run (docker compose only — the host has no Python deps)
 

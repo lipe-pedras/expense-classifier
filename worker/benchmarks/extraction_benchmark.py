@@ -15,12 +15,13 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import os
 import re
 import statistics
 import time
 import traceback
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from typing import Callable, Optional
 
@@ -47,45 +48,27 @@ class DocTruth:
     expenses: tuple[Expense, ...]
 
 
-GROUND_TRUTH: dict[str, DocTruth] = {
-    "boleto1": DocTruth(
-        due_date=date(2026, 4, 18),
-        due_date_str="18/04/2026",
-        payee="mohallem",
-        barcode_tail="14200000216324",
-        expenses=(
-            Expense(2079.70, "rent"),
-            Expense(69.55, "other"),
-            Expense(13.99, "insurance"),
-        ),
-    ),
-    "boleto2": DocTruth(
-        due_date=date(2026, 4, 10),
-        due_date_str="10/04/2026",
-        payee="murano",
-        barcode_tail="14120000037208",
-        expenses=(
-            Expense(265.00, "other"),
-            Expense(107.08, "water"),
-        ),
-    ),
-    "boleto3": DocTruth(
-        due_date=date(2026, 5, 15),
-        due_date_str="15/05/2026",
-        payee="supergasbras",
-        barcode_tail="14470000001698",
-        expenses=(
-            Expense(16.98, "other"),
-        ),
-    ),
-}
+def load_ground_truth(assets_dir: str) -> tuple[dict[str, DocTruth], list[tuple[str, str, str]]]:
+    """
+    Load ground truth from ``<assets_dir>/ground_truth.json`` (written by
+    generate_samples.py) and derive the file list (text-native + scanned twin).
+    """
+    with open(os.path.join(assets_dir, "ground_truth.json")) as fh:
+        raw = json.load(fh)
 
-# Files: text-native + scanned image twin for each boleto.
-FILES: list[tuple[str, str, str]] = [  # (base, filename, kind)
-    (base, f"{base}{suffix}.pdf", kind)
-    for base in ("boleto1", "boleto2", "boleto3")
-    for suffix, kind in (("", "text"), ("_image", "image"))
-]
+    truths: dict[str, DocTruth] = {}
+    files: list[tuple[str, str, str]] = []
+    for base, d in raw.items():
+        truths[base] = DocTruth(
+            due_date=date.fromisoformat(d["due_date"]),
+            due_date_str=d["due_date_str"],
+            payee=d["payee"].casefold(),
+            barcode_tail=d["barcode_tail"],
+            expenses=tuple(Expense(e["amount"], e["category"]) for e in d["expenses"]),
+        )
+        files.append((base, f"{base}.pdf", "text"))
+        files.append((base, f"{base}_image.pdf", "image"))
+    return truths, files
 
 
 # --------------------------------------------------------------------------- #
@@ -273,22 +256,22 @@ class E2ERow:
 # Fidelity mode
 # --------------------------------------------------------------------------- #
 
-def run_fidelity(assets_dir: str, repeats: int) -> list[FidelityRow]:
+def run_fidelity(assets_dir: str, repeats: int, truths: dict, files: list) -> list[FidelityRow]:
     rows: list[FidelityRow] = []
     have_cuda = cuda_available()
 
     for cfg in CONFIGS:
         if requires_gpu(cfg) and not have_cuda:
-            for base, filename, kind in FILES:
+            for base, filename, kind in files:
                 rows.append(FidelityRow(cfg.name, base, kind, "-", None, None,
                                         None, "", "CUDA unavailable — skipped"))
             print(f"[skip] {cfg.name}: CUDA unavailable")
             continue
 
         factory = build_factory(cfg)
-        for base, filename, kind in FILES:
+        for base, filename, kind in files:
             path = os.path.join(assets_dir, filename)
-            truth = GROUND_TRUTH[base]
+            truth = truths[base]
             try:
                 strategy = factory.get_strategy(path, "PDF")
                 strategy_name = type(strategy).__name__
@@ -337,14 +320,14 @@ def build_pipeline_stages(factory: ExtractionStrategyFactory):
     ]
 
 
-def run_e2e(assets_dir: str) -> list[E2ERow]:
+def run_e2e(assets_dir: str, truths: dict, files: list) -> list[E2ERow]:
     rows: list[E2ERow] = []
     have_cuda = cuda_available()
 
     for cfg in CONFIGS:
         if requires_gpu(cfg) and not have_cuda:
-            for base, filename, kind in FILES:
-                t = GROUND_TRUTH[base]
+            for base, filename, kind in files:
+                t = truths[base]
                 rows.append(E2ERow(cfg.name, base, kind, len(t.expenses), None,
                                    None, None, None, None, None,
                                    "CUDA unavailable — skipped"))
@@ -353,9 +336,9 @@ def run_e2e(assets_dir: str) -> list[E2ERow]:
 
         factory = build_factory(cfg)
         stages = build_pipeline_stages(factory)
-        for base, filename, kind in FILES:
+        for base, filename, kind in files:
             path = os.path.join(assets_dir, filename)
-            truth = GROUND_TRUTH[base]
+            truth = truths[base]
             ctx = DocumentContext(
                 document_id=f"bench-{cfg.name}-{base}",
                 user_id="bench",
@@ -446,11 +429,13 @@ def main() -> None:
     args = parser.parse_args()
 
     print(f"CUDA available: {cuda_available()}")
+    truths, files = load_ground_truth(args.assets_dir)
+    print(f"Loaded {len(truths)} documents from ground_truth.json")
 
     if args.mode in ("extraction", "both"):
-        emit_fidelity(run_fidelity(args.assets_dir, args.repeats), args.out_dir)
+        emit_fidelity(run_fidelity(args.assets_dir, args.repeats, truths, files), args.out_dir)
     if args.mode in ("e2e", "both"):
-        emit_e2e(run_e2e(args.assets_dir), args.out_dir)
+        emit_e2e(run_e2e(args.assets_dir, truths, files), args.out_dir)
 
 
 if __name__ == "__main__":

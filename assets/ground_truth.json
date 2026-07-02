@@ -1,0 +1,250 @@
+{
+  "doc01_rent_easy": {
+    "due_date": "2026-01-10",
+    "due_date_str": "10/01/2026",
+    "payee": "solar",
+    "barcode_tail": "90115300059797",
+    "expenses": [
+      {
+        "amount": 1500.0,
+        "category": "rent"
+      }
+    ]
+  },
+  "doc02_water_easy": {
+    "due_date": "2026-02-05",
+    "due_date_str": "05/02/2026",
+    "payee": "claras",
+    "barcode_tail": "37724264804593",
+    "expenses": [
+      {
+        "amount": 87.4,
+        "category": "water"
+      },
+      {
+        "amount": 42.1,
+        "category": "other"
+      }
+    ]
+  },
+  "doc03_rent_table": {
+    "due_date": "2026-04-18",
+    "due_date_str": "18/04/2026",
+    "payee": "mohallem",
+    "barcode_tail": "80383902552030",
+    "expenses": [
+      {
+        "amount": 2079.7,
+        "category": "rent"
+      },
+      {
+        "amount": 69.55,
+        "category": "other"
+      },
+      {
+        "amount": 13.99,
+        "category": "insurance"
+      }
+    ]
+  },
+  "doc04_energy": {
+    "due_date": "2026-03-20",
+    "due_date_str": "20/03/2026",
+    "payee": "cpfl",
+    "barcode_tail": "31307928794499",
+    "expenses": [
+      {
+        "amount": 231.88,
+        "category": "electricity"
+      },
+      {
+        "amount": 18.42,
+        "category": "other"
+      }
+    ]
+  },
+  "doc05_condo_small": {
+    "due_date": "2026-04-10",
+    "due_date_str": "10/04/2026",
+    "payee": "bela",
+    "barcode_tail": "24107772591042",
+    "expenses": [
+      {
+        "amount": 265.0,
+        "category": "other"
+      },
+      {
+        "amount": 107.08,
+        "category": "water"
+      },
+      {
+        "amount": 53.0,
+        "category": "other"
+      },
+      {
+        "amount": 44.9,
+        "category": "other"
+      },
+      {
+        "amount": 12.3,
+        "category": "other"
+      }
+    ]
+  },
+  "doc06_school_2p": {
+    "due_date": "2026-05-15",
+    "due_date_str": "15/05/2026",
+    "payee": "federal",
+    "barcode_tail": "10213062829513",
+    "expenses": [
+      {
+        "amount": 890.0,
+        "category": "other"
+      },
+      {
+        "amount": 120.0,
+        "category": "other"
+      },
+      {
+        "amount": 35.0,
+        "category": "insurance"
+      },
+      {
+        "amount": 60.0,
+        "category": "internet"
+      }
+    ]
+  },
+  "doc07_market_many": {
+    "due_date": "2026-06-01",
+    "due_date_str": "01/06/2026",
+    "payee": "central",
+    "barcode_tail": "13805644883253",
+    "expenses": [
+      {
+        "amount": 74.35,
+        "category": "other"
+      },
+      {
+        "amount": 132.9,
+        "category": "other"
+      },
+      {
+        "amount": 28.5,
+        "category": "other"
+      },
+      {
+        "amount": 45.1,
+        "category": "other"
+      },
+      {
+        "amount": 89.99,
+        "category": "other"
+      },
+      {
+        "amount": 37.8,
+        "category": "other"
+      },
+      {
+        "amount": 52.4,
+        "category": "other"
+      },
+      {
+        "amount": 61.25,
+        "category": "other"
+      }
+    ]
+  },
+  "doc08_holding_3p": {
+    "due_date": "2026-05-28",
+    "due_date_str": "28/05/2026",
+    "payee": "predial",
+    "barcode_tail": "46707102433596",
+    "expenses": [
+      {
+        "amount": 1200.0,
+        "category": "rent"
+      },
+      {
+        "amount": 340.0,
+        "category": "other"
+      },
+      {
+        "amount": 95.6,
+        "category": "water"
+      },
+      {
+        "amount": 210.15,
+        "category": "electricity"
+      },
+      {
+        "amount": 180.0,
+        "category": "internet"
+      },
+      {
+        "amount": 75.0,
+        "category": "insurance"
+      }
+    ]
+  },
+  "doc09_coop_tiny": {
+    "due_date": "2026-07-03",
+    "due_date_str": "03/07/2026",
+    "payee": "agro",
+    "barcode_tail": "24767866235309",
+    "expenses": [
+      {
+        "amount": 320.0,
+        "category": "other"
+      },
+      {
+        "amount": 540.5,
+        "category": "other"
+      },
+      {
+        "amount": 210.75,
+        "category": "other"
+      },
+      {
+        "amount": 430.0,
+        "category": "other"
+      },
+      {
+        "amount": 610.2,
+        "category": "other"
+      },
+      {
+        "amount": 88.4,
+        "category": "electricity"
+      },
+      {
+        "amount": 66.9,
+        "category": "water"
+      },
+      {
+        "amount": 150.0,
+        "category": "insurance"
+      },
+      {
+        "amount": 70.0,
+        "category": "internet"
+      },
+      {
+        "amount": 900.0,
+        "category": "rent"
+      }
+    ]
+  },
+  "doc10_telecom_noise": {
+    "due_date": "2026-06-22",
+    "due_date_str": "22/06/2026",
+    "payee": "telecomx",
+    "barcode_tail": "46067486401669",
+    "expenses": [
+      {
+        "amount": 119.9,
+        "category": "internet"
+      }
+    ]
+  }
+}
