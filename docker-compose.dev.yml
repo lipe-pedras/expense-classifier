@@ -84,6 +84,8 @@ services:
       INTERNAL_SERVICE_TOKEN: dev_internal_token
       INTERNAL_API_URL: http://api:3000
       FILE_UPLOAD_PATH: /app/uploads
+      USE_DOCLING: ${USE_DOCLING:-false}
+      DOCLING_DEVICE: ${DOCLING_DEVICE:-cpu}
     depends_on:
       redis:
         condition: service_healthy
@@ -91,6 +93,14 @@ services:
         condition: service_healthy
       api:
         condition: service_started
+    # GPU is only used when DOCLING_DEVICE=cuda; harmless to reserve otherwise.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     volumes:
       - ./worker:/app
       - uploads_dev_data:/app/uploads

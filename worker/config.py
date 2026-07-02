@@ -10,6 +10,10 @@ class Config:
     file_upload_path: str = os.environ.get("FILE_UPLOAD_PATH", "/app/uploads")
     # EasyOCR GPU flag — disable in test environments
     easyocr_gpu: bool = os.environ.get("EASYOCR_GPU", "true").lower() == "true"
+    # Use Docling for extraction instead of pdfplumber/EasyOCR.
+    use_docling: bool = os.environ.get("USE_DOCLING", "false").lower() == "true"
+    # Device Docling runs on: "cpu" (default, safe) or "cuda" (needs GPU + free VRAM).
+    docling_device: str = os.environ.get("DOCLING_DEVICE", "cpu").lower()
 
 
 config = Config()

@@ -35,3 +35,29 @@ def test_image_extractor_is_reused():
         e1 = factory._get_image_extractor()
         e2 = factory._get_image_extractor()
     assert e1 is e2
+
+
+def test_use_docling_returns_docling_for_pdf_and_image():
+    factory = ExtractionStrategyFactory(gpu=False, use_docling=True)
+    with patch.object(factory, "_get_docling_extractor") as mock:
+        factory.get_strategy("/a/b.pdf", "PDF")
+        factory.get_strategy("/a/b.jpg", "IMAGE")
+    assert mock.call_count == 2
+
+
+def test_docling_extractor_is_reused():
+    """The Docling converter is expensive — the factory must cache it."""
+    factory = ExtractionStrategyFactory(gpu=False, use_docling=True)
+    sentinel = object()
+    with patch("extraction.docling_extractor.DoclingExtractor", return_value=sentinel) as ctor:
+        d1 = factory._get_docling_extractor()
+        d2 = factory._get_docling_extractor()
+    assert d1 is d2
+    ctor.assert_called_once()
+
+
+def test_docling_device_is_passed_through():
+    factory = ExtractionStrategyFactory(gpu=False, use_docling=True, docling_device="cuda")
+    with patch("extraction.docling_extractor.DoclingExtractor") as ctor:
+        factory._get_docling_extractor()
+    ctor.assert_called_once_with(device="cuda")

@@ -30,7 +30,11 @@ QUEUE_NAME = "document-processing"
 
 
 def build_pipeline() -> DocumentPipeline:
-    factory = ExtractionStrategyFactory(gpu=config.easyocr_gpu)
+    factory = ExtractionStrategyFactory(
+        gpu=config.easyocr_gpu,
+        use_docling=config.use_docling,
+        docling_device=config.docling_device,
+    )
     classifier = LlmClassifier(base_url=config.ollama_url, model=config.ollama_model)
     api_client = InternalApiClient(
         base_url=config.api_base_url,

@@ -13,6 +13,9 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Pre-download Docling models so the first document doesn't stall on a large fetch.
+RUN docling-tools models download
+
 COPY . .
 
 ENV PYTHONUNBUFFERED=1 \
