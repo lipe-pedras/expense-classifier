@@ -7,6 +7,7 @@ import {
   UserNotFoundError,
   UserEmailTakenError,
   UserUsernameTakenError,
+  UserConfirmationMismatchError,
   AuthInvalidCredentialsError,
 } from '../../../src/errors/AppError.js';
 
@@ -147,15 +148,41 @@ describe('UserService', () => {
   });
 
   describe('delete', () => {
-    it('should cascade-delete the user', async () => {
+    it('should cascade-delete the user when password and username match', async () => {
       (repo.findById as any).mockResolvedValue(fakeUser);
-      await service.delete('user-1');
+      (hasher.compare as any).mockResolvedValue(true);
+
+      await service.delete('user-1', { password: 'current-pw', username: 'alice' });
+
+      expect(hasher.compare).toHaveBeenCalledWith('current-pw', fakeUser.passwordHash);
       expect(repo.deleteCascade).toHaveBeenCalledWith('user-1');
+    });
+
+    it('should throw UserConfirmationMismatchError when the username does not match', async () => {
+      (repo.findById as any).mockResolvedValue(fakeUser);
+
+      await expect(
+        service.delete('user-1', { password: 'current-pw', username: 'bob' }),
+      ).rejects.toBeInstanceOf(UserConfirmationMismatchError);
+      expect(hasher.compare).not.toHaveBeenCalled();
+      expect(repo.deleteCascade).not.toHaveBeenCalled();
+    });
+
+    it('should throw AuthInvalidCredentialsError when the password is wrong', async () => {
+      (repo.findById as any).mockResolvedValue(fakeUser);
+      (hasher.compare as any).mockResolvedValue(false);
+
+      await expect(
+        service.delete('user-1', { password: 'wrong-pw', username: 'alice' }),
+      ).rejects.toBeInstanceOf(AuthInvalidCredentialsError);
+      expect(repo.deleteCascade).not.toHaveBeenCalled();
     });
 
     it('should throw UserNotFoundError when missing', async () => {
       (repo.findById as any).mockResolvedValue(null);
-      await expect(service.delete('missing')).rejects.toBeInstanceOf(UserNotFoundError);
+      await expect(
+        service.delete('missing', { password: 'x', username: 'alice' }),
+      ).rejects.toBeInstanceOf(UserNotFoundError);
       expect(repo.deleteCascade).not.toHaveBeenCalled();
     });
   });

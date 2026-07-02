@@ -6,6 +6,7 @@ export type AppErrorCode =
   | 'USER_NOT_FOUND'
   | 'USER_EMAIL_TAKEN'
   | 'USER_USERNAME_TAKEN'
+  | 'USER_CONFIRMATION_MISMATCH'
   | 'DOCUMENT_NOT_FOUND'
   | 'DOCUMENT_UPLOAD_FAILED'
   | 'DOCUMENT_UNSUPPORTED_TYPE'
@@ -71,6 +72,12 @@ export class UserEmailTakenError extends AppError {
 export class UserUsernameTakenError extends AppError {
   constructor(message = 'Username already taken') {
     super('USER_USERNAME_TAKEN', message, 409);
+  }
+}
+
+export class UserConfirmationMismatchError extends AppError {
+  constructor(message = 'Confirmation does not match your username') {
+    super('USER_CONFIRMATION_MISMATCH', message, 400);
   }
 }
 

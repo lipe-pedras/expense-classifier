@@ -44,6 +44,8 @@ export const usersApi = {
     apiClient.put<User>('/api/users/me', data).then((r) => r.data),
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     apiClient.put('/api/users/me/password', data),
+  deleteAccount: (data: { password: string; username: string }) =>
+    apiClient.delete('/api/users/me', { data }),
 };
 
 export const expensesApi = {

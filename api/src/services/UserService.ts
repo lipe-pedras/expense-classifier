@@ -5,8 +5,14 @@ import {
   UserNotFoundError,
   UserEmailTakenError,
   UserUsernameTakenError,
+  UserConfirmationMismatchError,
   AuthInvalidCredentialsError,
 } from '../errors/AppError.js';
+
+export interface DeleteUserInput {
+  password: string;
+  username: string;
+}
 
 export interface UpdateUserInput {
   username?: string;
@@ -59,9 +65,15 @@ export class UserService {
     await this.userRepo.update(userId, { passwordHash });
   }
 
-  async delete(userId: string): Promise<void> {
+  async delete(userId: string, input: DeleteUserInput): Promise<void> {
     const current = await this.userRepo.findById(userId);
     if (!current) throw new UserNotFoundError();
+
+    if (input.username !== current.username) throw new UserConfirmationMismatchError();
+
+    const ok = await this.hasher.compare(input.password, current.passwordHash);
+    if (!ok) throw new AuthInvalidCredentialsError('Password is incorrect');
+
     await this.userRepo.deleteCascade(userId);
   }
 

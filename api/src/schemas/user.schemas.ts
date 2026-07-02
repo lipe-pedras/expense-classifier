@@ -53,8 +53,17 @@ export const deleteMeSchema = {
   tags: ['Users'],
   summary: 'Delete the authenticated user account',
   security: bearerAuth,
+  body: {
+    type: 'object',
+    properties: {
+      password: { type: 'string', minLength: 1 },
+      username: { type: 'string', minLength: 1 },
+    },
+    required: ['password', 'username'],
+  },
   response: {
     204: { type: 'null' },
+    400: errorSchema,
     401: errorSchema,
     404: errorSchema,
   },

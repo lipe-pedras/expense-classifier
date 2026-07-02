@@ -35,7 +35,8 @@ export class UserController {
   }
 
   private async deleteMe(req: FastifyRequest, reply: FastifyReply): Promise<void> {
-    await this.userService.delete(req.userId);
+    const { password, username } = req.body as { password: string; username: string };
+    await this.userService.delete(req.userId, { password, username });
     reply.status(204).send();
   }
 }

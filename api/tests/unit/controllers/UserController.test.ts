@@ -106,18 +106,37 @@ describe('UserController', () => {
   });
 
   describe('DELETE /api/users/me', () => {
+    const DELETE_BODY = { password: 'password123', username: 'alice' };
+
     it('should return 204 on success', async () => {
       (services.userService.delete as any).mockResolvedValue(undefined);
 
-      const res = await app.inject({ method: 'DELETE', url: '/api/users/me', headers: AUTH });
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/users/me',
+        headers: AUTH,
+        payload: DELETE_BODY,
+      });
 
       expect(res.statusCode).toBe(204);
+      expect(services.userService.delete).toHaveBeenCalledWith(expect.any(String), DELETE_BODY);
+    });
+
+    it('should return 400 when password or username is missing', async () => {
+      const res = await app.inject({ method: 'DELETE', url: '/api/users/me', headers: AUTH, payload: {} });
+
+      expect(res.statusCode).toBe(400);
     });
 
     it('should return 404 when the user is gone', async () => {
       (services.userService.delete as any).mockRejectedValue(new UserNotFoundError());
 
-      const res = await app.inject({ method: 'DELETE', url: '/api/users/me', headers: AUTH });
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/users/me',
+        headers: AUTH,
+        payload: DELETE_BODY,
+      });
 
       expect(res.statusCode).toBe(404);
     });

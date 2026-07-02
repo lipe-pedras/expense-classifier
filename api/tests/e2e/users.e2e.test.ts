@@ -129,13 +129,14 @@ describe('PUT /api/users/me', () => {
 });
 
 describe('DELETE /api/users/me', () => {
-  it('deletes the user and their data', async () => {
+  it('deletes the user and their data when password and username match', async () => {
     const { user, accessToken } = await registerAndLogin(app);
 
     const res = await app.inject({
       method: 'DELETE',
       url: '/api/users/me',
       headers: authHeader(accessToken),
+      payload: { password: 'password123', username: user.username },
     });
 
     expect(res.statusCode).toBe(204);
@@ -144,8 +145,42 @@ describe('DELETE /api/users/me', () => {
     expect(dbUser).toBeNull();
   });
 
+  it('returns 401 and keeps the account when the password is wrong', async () => {
+    const { user, accessToken } = await registerAndLogin(app);
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/users/me',
+      headers: authHeader(accessToken),
+      payload: { password: 'wrong-password', username: user.username },
+    });
+
+    expect(res.statusCode).toBe(401);
+    const dbUser = await testPrisma.user.findUnique({ where: { id: user.id } });
+    expect(dbUser).not.toBeNull();
+  });
+
+  it('returns 400 when the username confirmation does not match', async () => {
+    const { user, accessToken } = await registerAndLogin(app);
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/users/me',
+      headers: authHeader(accessToken),
+      payload: { password: 'password123', username: `${user.username}-wrong` },
+    });
+
+    expect(res.statusCode).toBe(400);
+    const dbUser = await testPrisma.user.findUnique({ where: { id: user.id } });
+    expect(dbUser).not.toBeNull();
+  });
+
   it('returns 401 without auth', async () => {
-    const res = await app.inject({ method: 'DELETE', url: '/api/users/me' });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/users/me',
+      payload: { password: 'password123', username: 'someone' },
+    });
     expect(res.statusCode).toBe(401);
   });
 });

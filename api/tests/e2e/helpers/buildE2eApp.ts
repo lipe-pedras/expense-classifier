@@ -114,7 +114,7 @@ export async function buildE2eApp(): Promise<E2eApp> {
   });
 
   const authService = new AuthService(userRepo, jwtService, hasher);
-  const userService = new UserService(userRepo);
+  const userService = new UserService(userRepo, hasher);
   const categoryService = new CategoryService(categoryRepo);
   const documentService = new DocumentService(
     documentRepo,
