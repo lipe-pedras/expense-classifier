@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 
 from extraction.interfaces.i_extraction_strategy import IExtractionStrategy
+from extraction.ocr_layout import ocr_image
 
 
 class ImageExtractor(IExtractionStrategy):
@@ -21,5 +22,6 @@ class ImageExtractor(IExtractionStrategy):
 
     def extract(self, file_path: str) -> list[str]:
         image = np.array(Image.open(file_path).convert("RGB"))
-        results = self._reader.readtext(image, detail=0, paragraph=True)
-        return ["\n".join(results)]
+        # Coordinate-based row reconstruction preserves table layout so the
+        # LLM can pair each line-item description with its amount.
+        return [ocr_image(self._reader, image)]

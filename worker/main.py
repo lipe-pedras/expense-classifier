@@ -32,7 +32,8 @@ QUEUE_NAME = "document-processing"
 def build_pipeline() -> DocumentPipeline:
     factory = ExtractionStrategyFactory(
         gpu=config.easyocr_gpu,
-        use_docling=config.use_docling,
+        engine=config.extraction_engine,
+        fallback=config.extraction_fallback,
         docling_device=config.docling_device,
     )
     classifier = LlmClassifier(base_url=config.ollama_url, model=config.ollama_model)

@@ -5,6 +5,7 @@ import numpy as np
 from pdf2image import convert_from_path
 
 from extraction.interfaces.i_extraction_strategy import IExtractionStrategy
+from extraction.ocr_layout import ocr_image
 
 
 class ImagePdfExtractor(IExtractionStrategy):
@@ -25,6 +26,7 @@ class ImagePdfExtractor(IExtractionStrategy):
         pages: list[str] = []
         for pil_image in images:
             arr = np.array(pil_image.convert("RGB"))
-            results = self._reader.readtext(arr, detail=0, paragraph=True)
-            pages.append("\n".join(results))
+            # Coordinate-based row reconstruction preserves table layout so the
+            # LLM can pair each line-item description with its amount.
+            pages.append(ocr_image(self._reader, arr))
         return pages

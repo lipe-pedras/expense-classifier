@@ -6,11 +6,19 @@ import pytest
 from extraction.image_extractor import ImageExtractor
 
 
+def _box(x0, y0, x1, y1, text):
+    return ([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], text, 0.9)
+
+
 def test_extract_returns_list_with_joined_lines(tmp_path):
     img_path = tmp_path / "test.png"
 
     mock_reader = MagicMock()
-    mock_reader.readtext.return_value = ["Line one", "Line two"]
+    # Two boxes on separate rows → reconstructed as two lines.
+    mock_reader.readtext.return_value = [
+        _box(10, 10, 120, 30, "Line one"),
+        _box(10, 100, 120, 120, "Line two"),
+    ]
 
     extractor = ImageExtractor(gpu=False, reader=mock_reader)
 

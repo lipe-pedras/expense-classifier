@@ -84,7 +84,8 @@ services:
       INTERNAL_SERVICE_TOKEN: dev_internal_token
       INTERNAL_API_URL: http://api:3000
       FILE_UPLOAD_PATH: /app/uploads
-      USE_DOCLING: ${USE_DOCLING:-false}
+      EXTRACTION_ENGINE: ${EXTRACTION_ENGINE:-default}
+      EXTRACTION_FALLBACK: ${EXTRACTION_FALLBACK:-docling}
       DOCLING_DEVICE: ${DOCLING_DEVICE:-cpu}
     depends_on:
       redis:
