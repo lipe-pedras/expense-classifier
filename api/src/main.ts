@@ -8,6 +8,7 @@ import { DocumentRepository } from './repositories/DocumentRepository.js';
 import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { CategoryRepository } from './repositories/CategoryRepository.js';
 import { ChartRepository } from './repositories/ChartRepository.js';
+import { SqlChartRepository } from './repositories/SqlChartRepository.js';
 import { JwtService } from './services/JwtService.js';
 import { AuthService, BcryptHasher } from './services/AuthService.js';
 import { UserService } from './services/UserService.js';
@@ -37,6 +38,10 @@ async function main(): Promise<void> {
   const expenseRepo = new ExpenseRepository(prisma);
   const categoryRepo = new CategoryRepository(prisma);
   const chartRepo = new ChartRepository(prisma);
+  // Separate connection as the least-privilege `chart_reader` role for running
+  // LLM-authored SQL under row-level security.
+  const chartPrisma = new PrismaClient({ datasources: { db: { url: config.chartDatabaseUrl } } });
+  const sqlChartRepo = new SqlChartRepository(chartPrisma);
 
   // Redis + BullMQ. The pipeline spans two queues: the extractor consumes
   // `document-processing`, then hands off to the llm-worker on `classification`.
@@ -74,7 +79,13 @@ async function main(): Promise<void> {
   );
   const expenseService = new ExpenseService(expenseRepo, categoryRepo);
   const exportService = new ExportService(expenseRepo, categoryRepo, documentRepo);
-  const chartService = new ChartService(chartQueue, chartQueueEvents, chartRepo);
+  const chartService = new ChartService(
+    chartQueue,
+    chartQueueEvents,
+    chartRepo,
+    sqlChartRepo,
+    categoryRepo,
+  );
 
   // Event bus wiring
   const eventBus = new EventBus();
