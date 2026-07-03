@@ -133,6 +133,18 @@ export interface IChartRepository {
   aggregate(userId: string, spec: ChartSpec): Promise<ChartRow[]>;
 }
 
+export interface ISqlChartRepository {
+  /**
+   * Executes LLM-authored read-only SQL for one user. The SQL runs through the
+   * least-privilege `chart_reader` connection inside a read-only transaction
+   * whose row-level-security context is pinned to `userId`, so it can never
+   * write, never read another user's rows, and must project `label`/`value`.
+   * Throws {@link SqlChartError} (carrying the Postgres message) on any SQL
+   * problem so the caller can feed it back to the model.
+   */
+  run(userId: string, sql: string): Promise<ChartRow[]>;
+}
+
 export interface ICategoryRepository extends IRepository<Category> {
   findByIdForUser(id: string, userId: string): Promise<Category | null>;
   findBySlugForUser(slug: string, userId: string): Promise<Category | null>;

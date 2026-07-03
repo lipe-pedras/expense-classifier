@@ -60,4 +60,11 @@ export interface ChartResult {
   rows: ChartRow[];
 }
 
+// The chart worker returns one of these. The `spec` variant is compiled by the
+// whitelisted, provably-safe path; the `sql` variant is LLM-authored SQL run
+// under the least-privilege `chart_reader` role + row-level security.
+export type ChartPlan =
+  | ({ mode: 'spec' } & ChartSpec)
+  | { mode: 'sql'; chart: ChartType; sql: string };
+
 export type { ProcessingStatus, FileType };
