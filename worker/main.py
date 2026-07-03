@@ -62,6 +62,7 @@ async def process_job(job, job_token=None):
         user_id=data["userId"],
         file_path=data["filePath"],
         file_type=data["fileType"],
+        categories=data.get("categories", []),
     )
 
     pipeline = build_pipeline()

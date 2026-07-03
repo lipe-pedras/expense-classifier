@@ -4,11 +4,18 @@ import type { FileType } from '@prisma/client';
 export const DOCUMENT_QUEUE_NAME = 'document-processing';
 export const DOCUMENT_JOB_NAME = 'process-document';
 
+export interface JobCategory {
+  slug: string;
+  name: string;
+}
+
 export interface DocumentJobPayload {
   documentId: string;
   filePath: string;
   fileType: FileType;
   userId: string;
+  /** The user's categories, so the worker classifies into the user's own set. */
+  categories: JobCategory[];
 }
 
 export interface IJobQueueService {

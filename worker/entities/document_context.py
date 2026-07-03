@@ -24,6 +24,10 @@ class DocumentContext:
     # Concatenation of raw_pages (kept for backward compat)
     raw_text: str = ""
 
+    # The user's categories (``[{"slug", "name"}, ...]``), attached to the job
+    # payload at enqueue time. Empty means "use the classifier defaults".
+    categories: list[dict] = field(default_factory=list)
+
     # Set by the segmentation stage
     segments: list[DocumentSegment] = field(default_factory=list)
 

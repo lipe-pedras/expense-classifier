@@ -109,6 +109,11 @@ describe('DocumentService', () => {
     queue = { enqueue: vi.fn().mockResolvedValue(undefined) };
     // Default: the user has no existing documents, so names are unique as-is.
     (documentRepo.findAllByUser as any).mockResolvedValue([]);
+    // Default: the user's categories attached to the enqueued job.
+    (categoryRepo.findAllByUser as any).mockResolvedValue([
+      { id: 'c1', userId: 'user-1', name: 'Rent', slug: 'rent', isSystem: true },
+      { id: 'c2', userId: 'user-1', name: 'Other', slug: 'other', isSystem: true },
+    ]);
     service = new DocumentService(
       documentRepo,
       expenseRepo,
@@ -141,6 +146,10 @@ describe('DocumentService', () => {
         filePath: fakeDocument.filePath,
         fileType: 'PDF',
         userId: 'user-1',
+        categories: [
+          { slug: 'rent', name: 'Rent' },
+          { slug: 'other', name: 'Other' },
+        ],
       });
       expect(result).toEqual(fakeDocument);
     });

@@ -22,6 +22,7 @@ describe('JobQueueService', () => {
         filePath: '/uploads/a.pdf',
         fileType: 'PDF',
         userId: 'user-1',
+        categories: [],
       };
 
       await service.enqueue(payload);
@@ -42,6 +43,7 @@ describe('JobQueueService', () => {
           filePath: 'p',
           fileType: 'IMAGE',
           userId: 'u',
+          categories: [],
         }),
       ).rejects.toThrow('redis down');
     });

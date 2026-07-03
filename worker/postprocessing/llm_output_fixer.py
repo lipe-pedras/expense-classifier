@@ -2,26 +2,30 @@ import re
 from datetime import date, datetime
 
 from entities.classification_result import ClassificationResult
+from entities.category_catalog import valid_slugs as _default_valid_slugs
 
-_VALID_SLUGS = {"rent", "water", "electricity", "internet", "insurance", "other"}
+_VALID_SLUGS = _default_valid_slugs(None)
 
 # Patterns to strip currency symbols before parsing amount
 _CURRENCY_SYMBOLS = re.compile(r"[R$€£¥\s,]")
 _AMOUNT_PATTERN = re.compile(r"[\d]+(?:[.,]\d+)*")
 
 
-def fix(result: ClassificationResult) -> ClassificationResult:
+def fix(result: ClassificationResult, valid: set[str] | None = None) -> ClassificationResult:
     """
     Apply heuristic corrections to a ClassificationResult produced by the LLM:
 
-    - Normalise category_slug to a valid value (fallback "other")
+    - Normalise category_slug to a valid value (fallback "other"). When ``valid``
+      is given it is used as the acceptable slug set (the user's categories);
+      otherwise the built-in defaults apply.
     - Clamp confidence to [0, 1]
     - Ensure amount >= 0
     - Ensure expense_date is not in the future
     - Strip None/empty vendor
     """
+    allowed = valid if valid else _VALID_SLUGS
     slug = result.category_slug.lower().strip() if result.category_slug else "other"
-    if slug not in _VALID_SLUGS:
+    if slug not in allowed:
         slug = "other"
 
     amount = max(0.0, result.amount)

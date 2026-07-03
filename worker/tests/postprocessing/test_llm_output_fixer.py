@@ -41,6 +41,18 @@ def test_empty_slug_becomes_other():
     assert fixed.category_slug == "other"
 
 
+def test_user_slug_accepted_with_custom_valid_set():
+    result = make_result(category_slug="gym")
+    fixed = fix(result, valid={"gym", "other"})
+    assert fixed.category_slug == "gym"
+
+
+def test_slug_outside_custom_valid_set_becomes_other():
+    result = make_result(category_slug="rent")
+    fixed = fix(result, valid={"gym", "other"})
+    assert fixed.category_slug == "other"
+
+
 def test_confidence_clamped_above_one():
     result = make_result(confidence=1.5)
     fixed = fix(result)

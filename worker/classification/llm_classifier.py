@@ -5,29 +5,38 @@ from datetime import date
 import httpx
 
 from entities.classification_result import ClassificationResult
+from entities.category_catalog import resolve_categories, valid_slugs
 
-_VALID_SLUGS = {"rent", "water", "electricity", "internet", "insurance", "other"}
 
-_SYSTEM_PROMPT = textwrap.dedent("""\
-    You are a financial document classifier. Given a page from a bill or receipt,
-    extract ALL expenses found and respond ONLY with a valid JSON array — no markdown, no explanation.
+def _build_system_prompt(categories: list[dict]) -> str:
+    """Builds the classifier system prompt from the categories available to the
+    user, so the LLM only ever picks from the user's own set."""
+    slugs = " | ".join(c["slug"] for c in categories)
+    legend = "\n".join(f'    - {c["slug"]}: {c["name"]}' for c in categories)
+    return textwrap.dedent("""\
+        You are a financial document classifier. Given a page from a bill or receipt,
+        extract ALL expenses found and respond ONLY with a valid JSON array — no markdown, no explanation.
 
-    Each element must follow this schema:
-    {
-      "category_slug": "<one of: rent | water | electricity | internet | insurance | other>",
-      "vendor": "<company name or null>",
-      "amount": <number>,
-      "currency": "<ISO 4217 code, e.g. BRL or USD>",
-      "expense_date": "<YYYY-MM-DD>",
-      "confidence": <float between 0 and 1>
-    }
+        Each element must follow this schema:
+        {{
+          "category_slug": "<one of: {slugs}>",
+          "vendor": "<company name or null>",
+          "amount": <number>,
+          "currency": "<ISO 4217 code, e.g. BRL or USD>",
+          "expense_date": "<YYYY-MM-DD>",
+          "confidence": <float between 0 and 1>
+        }}
 
-    Rules:
-    - Return an empty array [] if no expenses are found on this page.
-    - If you cannot determine a field, use null for strings and 0 for numbers.
-    - expense_date must be the date the expense was incurred, not today's date.
-    - confidence reflects how certain you are about the classification (1 = certain).
-""")
+        Available categories (slug: label):
+        {legend}
+
+        Rules:
+        - Return an empty array [] if no expenses are found on this page.
+        - category_slug must be one of the slugs listed above; use "other" if none fit.
+        - If you cannot determine a field, use null for strings and 0 for numbers.
+        - expense_date must be the date the expense was incurred, not today's date.
+        - confidence reflects how certain you are about the classification (1 = certain).
+    """).format(slugs=slugs, legend=legend)
 
 
 class LlmClassifier:
@@ -38,11 +47,18 @@ class LlmClassifier:
         self._model = model
         self._client = client or httpx.Client(timeout=120)
 
-    def classify(self, page_index: int, text: str) -> list[ClassificationResult]:
+    def classify(
+        self,
+        page_index: int,
+        text: str,
+        categories: list[dict] | None = None,
+    ) -> list[ClassificationResult]:
+        cats = resolve_categories(categories)
+        valid = valid_slugs(cats)
         payload = {
             "model": self._model,
             "messages": [
-                {"role": "system", "content": _SYSTEM_PROMPT},
+                {"role": "system", "content": _build_system_prompt(cats)},
                 {"role": "user", "content": text},
             ],
             "stream": False,
@@ -53,9 +69,15 @@ class LlmClassifier:
         )
         response.raise_for_status()
         raw_content: str = response.json()["message"]["content"]
-        return self._parse(page_index, text, raw_content)
+        return self._parse(page_index, text, raw_content, valid)
 
-    def _parse(self, page_index: int, raw_text: str, content: str) -> list[ClassificationResult]:
+    def _parse(
+        self,
+        page_index: int,
+        raw_text: str,
+        content: str,
+        valid: set[str],
+    ) -> list[ClassificationResult]:
         try:
             data = json.loads(content)
         except json.JSONDecodeError:
@@ -81,12 +103,18 @@ class LlmClassifier:
         for item in data:
             if not isinstance(item, dict):
                 continue
-            results.append(self._parse_item(page_index, raw_text, item))
+            results.append(self._parse_item(page_index, raw_text, item, valid))
         return results
 
-    def _parse_item(self, page_index: int, raw_text: str, data: dict) -> ClassificationResult:
+    def _parse_item(
+        self,
+        page_index: int,
+        raw_text: str,
+        data: dict,
+        valid: set[str],
+    ) -> ClassificationResult:
         category_slug = data.get("category_slug", "other")
-        if category_slug not in _VALID_SLUGS:
+        if category_slug not in valid:
             category_slug = "other"
 
         try:

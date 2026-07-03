@@ -61,11 +61,16 @@ export class DocumentService {
       fileType,
     });
 
+    // Attach the user's categories so the worker classifies into the user's own
+    // set rather than a hardcoded list.
+    const categories = await this.categoryRepo.findAllByUser(userId);
+
     await this.queue.enqueue({
       documentId: document.id,
       filePath,
       fileType,
       userId,
+      categories: categories.map((c) => ({ slug: c.slug, name: c.name })),
     });
 
     return document;

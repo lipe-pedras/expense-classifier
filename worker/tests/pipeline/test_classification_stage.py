@@ -38,8 +38,8 @@ def test_classification_stage_flattens_results_from_all_pages():
 
     assert len(ctx._classification_results) == 3
     assert classifier.classify.call_count == 2
-    classifier.classify.assert_any_call(0, "seg0 norm")
-    classifier.classify.assert_any_call(1, "seg1 norm")
+    classifier.classify.assert_any_call(0, "seg0 norm", [])
+    classifier.classify.assert_any_call(1, "seg1 norm", [])
 
 
 def test_classification_stage_falls_back_to_raw_text_when_normalised_empty():
@@ -51,7 +51,20 @@ def test_classification_stage_falls_back_to_raw_text_when_normalised_empty():
 
     ClassificationStage(classifier).process(ctx)
 
-    classifier.classify.assert_called_once_with(0, "raw text")
+    classifier.classify.assert_called_once_with(0, "raw text", [])
+
+
+def test_classification_stage_threads_user_categories():
+    classifier = MagicMock(spec=LlmClassifier)
+    classifier.classify.return_value = [make_result(0)]
+
+    ctx = DocumentContext("d", "u", "/f", "PDF")
+    ctx.categories = [{"slug": "gym", "name": "Gym"}]
+    ctx.segments = [DocumentSegment(index=0, raw_text="raw", normalised_text="norm")]
+
+    ClassificationStage(classifier).process(ctx)
+
+    classifier.classify.assert_called_once_with(0, "norm", [{"slug": "gym", "name": "Gym"}])
 
 
 def test_classification_stage_empty_page_response():

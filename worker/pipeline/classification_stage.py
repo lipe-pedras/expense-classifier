@@ -20,6 +20,6 @@ class ClassificationStage(PipelineStage):
         results: list[ClassificationResult] = []
         for seg in ctx.segments:
             text = seg.normalised_text or seg.raw_text
-            page_results = self._classifier.classify(seg.index, text)
+            page_results = self._classifier.classify(seg.index, text, ctx.categories)
             results.extend(page_results)
         ctx._classification_results = results  # type: ignore[attr-defined]

@@ -133,6 +133,56 @@ def test_classify_unknown_slug_becomes_other():
     assert results[0].category_slug == "other"
 
 
+def test_classify_accepts_user_specific_slug():
+    payload = json.dumps([{
+        "category_slug": "gym",
+        "vendor": "FitClub",
+        "amount": 80.0,
+        "currency": "BRL",
+        "expense_date": "2026-01-01",
+        "confidence": 0.8,
+    }])
+    client = make_client(payload)
+    classifier = LlmClassifier("http://ollama:11434", "test-model", client=client)
+
+    results = classifier.classify(
+        0, "gym receipt", categories=[{"slug": "gym", "name": "Gym"}]
+    )
+
+    assert results[0].category_slug == "gym"
+
+
+def test_classify_slug_outside_user_categories_becomes_other():
+    payload = json.dumps([{
+        "category_slug": "rent",  # not in the user's set below
+        "vendor": None,
+        "amount": 10.0,
+        "currency": "BRL",
+        "expense_date": "2026-01-01",
+        "confidence": 0.5,
+    }])
+    client = make_client(payload)
+    classifier = LlmClassifier("http://ollama:11434", "test-model", client=client)
+
+    results = classifier.classify(
+        0, "text", categories=[{"slug": "gym", "name": "Gym"}]
+    )
+
+    assert results[0].category_slug == "other"
+
+
+def test_classify_prompt_lists_user_categories():
+    client = make_client("[]")
+    classifier = LlmClassifier("http://ollama:11434", "test-model", client=client)
+
+    classifier.classify(0, "text", categories=[{"slug": "gym", "name": "Gym"}])
+
+    sent = client.post.call_args.kwargs["json"]
+    system_prompt = sent["messages"][0]["content"]
+    assert "gym" in system_prompt
+    assert "Gym" in system_prompt
+
+
 def test_classify_missing_date_uses_today():
     payload = json.dumps([{
         "category_slug": "rent",
