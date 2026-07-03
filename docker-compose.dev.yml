@@ -53,6 +53,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/expense_classifier
       TEST_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/expense_classifier
+      CHART_DATABASE_URL: postgresql://chart_reader:chart_reader_pw@postgres:5432/expense_classifier
       REDIS_URL: redis://redis:6379
       JWT_SECRET: dev_jwt_secret
       JWT_REFRESH_SECRET: dev_refresh_secret

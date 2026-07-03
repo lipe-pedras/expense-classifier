@@ -24,6 +24,12 @@ export interface AppConfig {
   fileUploadPath: string;
   maxFileSizeBytes: number;
   redisUrl: string;
+  /**
+   * Connection string for the least-privilege, read-only `chart_reader` role
+   * used to execute LLM-authored chart SQL under Row-Level Security. Falls back
+   * to the dev role baked into the RLS migration.
+   */
+  chartDatabaseUrl: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -38,6 +44,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     fileUploadPath: env.FILE_UPLOAD_PATH ?? '/app/uploads',
     maxFileSizeBytes: maxMb * 1024 * 1024,
     redisUrl: env.REDIS_URL ?? 'redis://redis:6379',
+    chartDatabaseUrl:
+      env.CHART_DATABASE_URL ??
+      'postgresql://chart_reader:chart_reader_pw@postgres:5432/expense_classifier',
   };
 }
 
