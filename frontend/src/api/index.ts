@@ -2,6 +2,7 @@ import { apiClient } from './client';
 import type {
   AuthResult,
   Category,
+  ChartResult,
   CreateExpensePayload,
   Document,
   Expense,
@@ -52,6 +53,11 @@ export const usersApi = {
     apiClient.put('/api/users/me/password', data),
   deleteAccount: (data: { password: string; username: string }) =>
     apiClient.delete('/api/users/me', { data }),
+};
+
+export const chartsApi = {
+  query: (prompt: string) =>
+    apiClient.post<ChartResult>('/api/charts/query', { prompt }).then((r) => r.data),
 };
 
 export const expensesApi = {

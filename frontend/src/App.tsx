@@ -4,6 +4,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { CategoriesPage } from '@/pages/CategoriesPage';
+import { ChartsPage } from '@/pages/ChartsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -48,6 +49,14 @@ export function App() {
         element={
           <RequireAuth>
             <CategoriesPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/charts"
+        element={
+          <RequireAuth>
+            <ChartsPage />
           </RequireAuth>
         }
       />

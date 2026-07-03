@@ -1,6 +1,18 @@
 export type ProcessingStatus = 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED';
 export type FileType = 'PDF' | 'IMAGE';
 
+export type ChartType = 'bar' | 'pie' | 'line' | 'table';
+
+export interface ChartRow {
+  label: string;
+  value: number;
+}
+
+export interface ChartResult {
+  chart: ChartType;
+  rows: ChartRow[];
+}
+
 export interface User {
   id: string;
   username: string;

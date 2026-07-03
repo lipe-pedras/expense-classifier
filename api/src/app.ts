@@ -10,6 +10,7 @@ import type { CategoryService } from './services/CategoryService.js';
 import type { DocumentService } from './services/DocumentService.js';
 import type { ExpenseService } from './services/ExpenseService.js';
 import type { ExportService } from './services/ExportService.js';
+import type { ChartService } from './services/ChartService.js';
 import type { IJwtService } from './services/JwtService.js';
 import type { WebSocketNotifier } from './queue/listeners/WebSocketNotifier.js';
 import { AuthController } from './controllers/AuthController.js';
@@ -18,6 +19,7 @@ import { CategoryController } from './controllers/CategoryController.js';
 import { DocumentController } from './controllers/DocumentController.js';
 import { ExpenseController } from './controllers/ExpenseController.js';
 import { ExportController } from './controllers/ExportController.js';
+import { ChartController } from './controllers/ChartController.js';
 import { registerErrorHandler } from './errors/errorHandler.js';
 import { buildAuthMiddleware, buildInternalMiddleware } from './middleware/authMiddleware.js';
 import { internalResultSchema } from './schemas/internal.schemas.js';
@@ -29,6 +31,8 @@ export interface AppServices {
   documentService: DocumentService;
   expenseService: ExpenseService;
   exportService: ExportService;
+  /** Optional: only present when the Redis-backed chart pipeline is wired (prod runtime). */
+  chartService?: ChartService;
   jwtService: IJwtService;
   wsNotifier: WebSocketNotifier;
   internalServiceToken: string;
@@ -84,6 +88,11 @@ export async function buildApp(services: AppServices): Promise<FastifyInstance> 
   // priority over /api/expenses/:id when both match /api/expenses/export.
   new ExportController(services.exportService).registerRoutes(app, auth);
   new ExpenseController(services.expenseService).registerRoutes(app, auth);
+
+  // Chart routes require the Redis-backed LLM pipeline; only wired at runtime.
+  if (services.chartService) {
+    new ChartController(services.chartService).registerRoutes(app, auth);
+  }
 
   // Internal route (called by the Python worker) — clears any prior expenses for
   // the document before a job persists its results, making reprocessing idempotent.

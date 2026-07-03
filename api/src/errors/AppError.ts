@@ -17,6 +17,8 @@ export type AppErrorCode =
   | 'CATEGORY_SYSTEM_MODIFY'
   | 'CATEGORY_SLUG_TAKEN'
   | 'CATEGORY_NAME_TAKEN'
+  | 'CHART_UNSUPPORTED'
+  | 'CHART_GENERATION_FAILED'
   | 'INTERNAL_ERROR';
 
 export class AppError extends Error {
@@ -140,6 +142,18 @@ export class CategorySlugTakenError extends AppError {
 export class CategoryNameTakenError extends AppError {
   constructor(message = 'Category name already exists for this user') {
     super('CATEGORY_NAME_TAKEN', message, 409);
+  }
+}
+
+export class ChartUnsupportedError extends AppError {
+  constructor(message = "Could not turn that request into a chart. Try naming a measure (total, count, average), a grouping (category, month, vendor, currency), and a period.") {
+    super('CHART_UNSUPPORTED', message, 422);
+  }
+}
+
+export class ChartGenerationFailedError extends AppError {
+  constructor(message = 'Chart generation timed out or failed. Please try again.') {
+    super('CHART_GENERATION_FAILED', message, 503);
   }
 }
 

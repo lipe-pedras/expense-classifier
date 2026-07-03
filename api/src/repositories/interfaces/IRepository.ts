@@ -7,6 +7,8 @@ import type {
   FileType,
 } from '@prisma/client';
 import type {
+  ChartRow,
+  ChartSpec,
   DashboardCategoryTotal,
   DashboardMonthTotal,
   ExpenseFilters,
@@ -118,6 +120,17 @@ export interface CreateCategoryInput {
 export interface UpdateCategoryInput {
   name: string;
   slug: string;
+}
+
+// ---------- Charts ----------
+
+export interface IChartRepository {
+  /**
+   * Runs a whitelisted aggregation for one user. The SQL is assembled purely
+   * from the validated spec tokens with a parameterised `userId`, so it can
+   * never read another user's rows or execute arbitrary SQL.
+   */
+  aggregate(userId: string, spec: ChartSpec): Promise<ChartRow[]>;
 }
 
 export interface ICategoryRepository extends IRepository<Category> {

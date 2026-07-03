@@ -8,6 +8,10 @@ export const DOCUMENT_JOB_NAME = 'process-document';
 // queue; its completion is what marks a document DONE.
 export const CLASSIFICATION_QUEUE_NAME = 'classification';
 
+// Natural-language → chart-spec requests handled by the llm-worker.
+export const CHART_QUEUE_NAME = 'chart-generation';
+export const CHART_JOB_NAME = 'generate-chart-spec';
+
 export interface JobCategory {
   slug: string;
   name: string;

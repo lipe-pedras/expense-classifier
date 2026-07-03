@@ -44,6 +44,15 @@ export function Navbar() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Link
               component={RouterLink}
+              to="/charts"
+              variant="body2"
+              color="text.secondary"
+              underline="hover"
+            >
+              Charts
+            </Link>
+            <Link
+              component={RouterLink}
               to="/categories"
               variant="body2"
               color="text.secondary"

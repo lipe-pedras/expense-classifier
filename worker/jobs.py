@@ -15,6 +15,10 @@ from entities.document_context import DocumentContext, DocumentSegment
 CLASSIFICATION_QUEUE_NAME = "classification"
 CLASSIFICATION_JOB_NAME = "classify-document"
 
+# Natural-language → chart-spec requests. The llm-worker produces only a JSON
+# query spec here; the API compiles and runs the SQL.
+CHART_QUEUE_NAME = "chart-generation"
+
 
 def build_classification_job(ctx: DocumentContext) -> dict:
     """Serialise the extractor's context into a classification job payload.

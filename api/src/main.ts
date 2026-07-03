@@ -7,6 +7,7 @@ import { UserRepository } from './repositories/UserRepository.js';
 import { DocumentRepository } from './repositories/DocumentRepository.js';
 import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { CategoryRepository } from './repositories/CategoryRepository.js';
+import { ChartRepository } from './repositories/ChartRepository.js';
 import { JwtService } from './services/JwtService.js';
 import { AuthService, BcryptHasher } from './services/AuthService.js';
 import { UserService } from './services/UserService.js';
@@ -16,10 +17,12 @@ import {
   JobQueueService,
   DOCUMENT_QUEUE_NAME,
   CLASSIFICATION_QUEUE_NAME,
+  CHART_QUEUE_NAME,
 } from './services/JobQueueService.js';
 import { DocumentService } from './services/DocumentService.js';
 import { ExpenseService } from './services/ExpenseService.js';
 import { ExportService } from './services/ExportService.js';
+import { ChartService } from './services/ChartService.js';
 import { EventBus } from './queue/EventBus.js';
 import { DocumentStatusUpdater } from './queue/listeners/DocumentStatusUpdater.js';
 import { WebSocketNotifier } from './queue/listeners/WebSocketNotifier.js';
@@ -33,16 +36,19 @@ async function main(): Promise<void> {
   const documentRepo = new DocumentRepository(prisma);
   const expenseRepo = new ExpenseRepository(prisma);
   const categoryRepo = new CategoryRepository(prisma);
+  const chartRepo = new ChartRepository(prisma);
 
   // Redis + BullMQ. The pipeline spans two queues: the extractor consumes
   // `document-processing`, then hands off to the llm-worker on `classification`.
   const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: null });
   const documentQueue = new Queue(DOCUMENT_QUEUE_NAME, { connection: redis });
   const classificationQueue = new Queue(CLASSIFICATION_QUEUE_NAME, { connection: redis });
+  const chartQueue = new Queue(CHART_QUEUE_NAME, { connection: redis });
   const documentQueueEvents = new QueueEvents(DOCUMENT_QUEUE_NAME, { connection: redis.duplicate() });
   const classificationQueueEvents = new QueueEvents(CLASSIFICATION_QUEUE_NAME, {
     connection: redis.duplicate(),
   });
+  const chartQueueEvents = new QueueEvents(CHART_QUEUE_NAME, { connection: redis.duplicate() });
 
   // Services
   const jwtService = new JwtService(
@@ -68,6 +74,7 @@ async function main(): Promise<void> {
   );
   const expenseService = new ExpenseService(expenseRepo, categoryRepo);
   const exportService = new ExportService(expenseRepo, categoryRepo, documentRepo);
+  const chartService = new ChartService(chartQueue, chartQueueEvents, chartRepo);
 
   // Event bus wiring
   const eventBus = new EventBus();
@@ -126,6 +133,7 @@ async function main(): Promise<void> {
     documentService,
     expenseService,
     exportService,
+    chartService,
     jwtService,
     wsNotifier,
     internalServiceToken: config.internalServiceToken,

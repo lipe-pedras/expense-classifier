@@ -52,6 +52,10 @@ export function makeMockServices(): AppServices {
       exportExpenses: vi.fn(),
     } as unknown as AppServices['exportService'],
 
+    chartService: {
+      query: vi.fn(),
+    } as unknown as AppServices['chartService'],
+
     jwtService: {
       signAccessToken: vi.fn().mockReturnValue('access-token'),
       signRefreshToken: vi.fn().mockReturnValue('refresh-token'),
