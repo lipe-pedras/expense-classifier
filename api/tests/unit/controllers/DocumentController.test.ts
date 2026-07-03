@@ -129,6 +129,41 @@ describe('DocumentController', () => {
     });
   });
 
+  describe('PUT /api/documents/:id', () => {
+    it('should rename and return 200 with the document', async () => {
+      (services.documentService.rename as any).mockResolvedValue({ ...document, originalName: 'renamed.pdf' });
+
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/documents/doc-1',
+        headers: AUTH,
+        payload: { originalName: 'renamed.pdf' },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json().originalName).toBe('renamed.pdf');
+      expect(services.documentService.rename).toHaveBeenCalledWith(expect.any(String), 'doc-1', 'renamed.pdf');
+    });
+
+    it('should return 400 when originalName is missing', async () => {
+      const res = await app.inject({ method: 'PUT', url: '/api/documents/doc-1', headers: AUTH, payload: {} });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('should return 404 for another user\'s document', async () => {
+      (services.documentService.rename as any).mockRejectedValue(new DocumentNotFoundError());
+
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/documents/doc-other',
+        headers: AUTH,
+        payload: { originalName: 'x.pdf' },
+      });
+
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
   describe('DELETE /api/documents/:id', () => {
     it('should return 204 on success', async () => {
       (services.documentService.delete as any).mockResolvedValue(undefined);

@@ -73,6 +73,7 @@ function makeDocumentRepo(): IDocumentRepository {
     findByIdForUser: vi.fn(),
     findAllByUser: vi.fn(),
     create: vi.fn(),
+    updateName: vi.fn(),
     updateStatus: vi.fn(),
     incrementExpenseCount: vi.fn(),
     resetExpenseCount: vi.fn(),

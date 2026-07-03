@@ -28,6 +28,10 @@ export class DocumentRepository
     return this.prisma.document.create({ data });
   }
 
+  updateName(id: string, originalName: string): Promise<Document> {
+    return this.prisma.document.update({ where: { id }, data: { originalName } });
+  }
+
   updateStatus(id: string, status: ProcessingStatus): Promise<Document> {
     return this.prisma.document.update({ where: { id }, data: { status } });
   }

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -6,8 +7,15 @@ import Skeleton from '@mui/material/Skeleton';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Divider from '@mui/material/Divider';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import MuiButton from '@mui/material/Button';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { documentsApi } from '@/api';
 import { useToastStore } from '@/store/toastStore';
 import { StatusBadge } from '@/components/ui/Badge';
@@ -21,15 +29,83 @@ function formatDate(iso: string) {
   });
 }
 
-function DocumentRow({ doc, onDeleted }: { doc: Document; onDeleted: () => void }) {
+function RenameDialog({
+  doc,
+  open,
+  onClose,
+  onRenamed,
+}: {
+  doc: Document;
+  open: boolean;
+  onClose: () => void;
+  onRenamed: () => void;
+}) {
   const { addToast } = useToastStore();
+  const [name, setName] = useState(doc.originalName);
+  const [saving, setSaving] = useState(false);
+
+  const trimmed = name.trim();
+  const canSave = trimmed.length > 0 && !saving;
+
+  const handleSave = async () => {
+    if (!canSave) return;
+    setSaving(true);
+    try {
+      const updated = await documentsApi.rename(doc.id, trimmed);
+      if (updated.originalName !== trimmed) {
+        addToast('info', `Name already existed — saved as "${updated.originalName}".`);
+      } else {
+        addToast('success', 'Document renamed.');
+      }
+      onRenamed();
+      onClose();
+    } catch {
+      addToast('error', 'Failed to rename document.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={() => !saving && onClose()} fullWidth maxWidth="xs">
+      <DialogTitle>Rename document</DialogTitle>
+      <DialogContent>
+        <TextField
+          autoFocus
+          fullWidth
+          label="Document name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          error={trimmed.length === 0}
+          helperText={trimmed.length === 0 ? 'Name cannot be empty.' : ' '}
+          sx={{ mt: 1 }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSave();
+          }}
+        />
+      </DialogContent>
+      <DialogActions>
+        <MuiButton onClick={onClose} disabled={saving}>
+          Cancel
+        </MuiButton>
+        <MuiButton onClick={handleSave} variant="contained" disabled={!canSave}>
+          {saving ? 'Saving…' : 'Save'}
+        </MuiButton>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function DocumentRow({ doc, onChanged }: { doc: Document; onChanged: () => void }) {
+  const { addToast } = useToastStore();
+  const [renameOpen, setRenameOpen] = useState(false);
 
   const handleDelete = async () => {
     if (!confirm(`Delete "${doc.originalName}"? All its expenses will also be deleted.`)) return;
     try {
       await documentsApi.delete(doc.id);
       addToast('success', `"${doc.originalName}" deleted.`);
-      onDeleted();
+      onChanged();
     } catch {
       addToast('error', 'Failed to delete document.');
     }
@@ -57,11 +133,22 @@ function DocumentRow({ doc, onDeleted }: { doc: Document; onDeleted: () => void 
         </Typography>
       </Box>
       <StatusBadge status={doc.status} />
+      <Tooltip title="Rename document">
+        <IconButton size="small" onClick={() => setRenameOpen(true)} sx={{ flexShrink: 0 }}>
+          <EditOutlinedIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
       <Tooltip title="Delete document">
         <IconButton size="small" onClick={handleDelete} sx={{ flexShrink: 0 }}>
           <DeleteOutlineIcon fontSize="small" />
         </IconButton>
       </Tooltip>
+      <RenameDialog
+        doc={doc}
+        open={renameOpen}
+        onClose={() => setRenameOpen(false)}
+        onRenamed={onChanged}
+      />
     </Box>
   );
 }
@@ -78,7 +165,7 @@ export function DocumentList() {
     },
   });
 
-  const onDeleted = () => {
+  const onChanged = () => {
     qc.invalidateQueries({ queryKey: ['documents'] });
     qc.invalidateQueries({ queryKey: ['expenses'] });
     qc.invalidateQueries({ queryKey: ['dashboard'] });
@@ -105,7 +192,7 @@ export function DocumentList() {
   return (
     <Stack divider={<Divider />}>
       {documents.map((doc) => (
-        <DocumentRow key={doc.id} doc={doc} onDeleted={onDeleted} />
+        <DocumentRow key={doc.id} doc={doc} onChanged={onChanged} />
       ))}
     </Stack>
   );

@@ -37,6 +37,26 @@ export const getDocumentSchema = {
   },
 } as const;
 
+export const renameDocumentSchema = {
+  tags: ['Documents'],
+  summary: 'Rename a document (name is made unique per user)',
+  security: bearerAuth,
+  params: idParamSchema,
+  body: {
+    type: 'object',
+    properties: {
+      originalName: { type: 'string', minLength: 1 },
+    },
+    required: ['originalName'],
+  },
+  response: {
+    200: documentSchema,
+    400: errorSchema,
+    401: errorSchema,
+    404: errorSchema,
+  },
+} as const;
+
 export const deleteDocumentSchema = {
   tags: ['Documents'],
   summary: 'Delete a document by ID',

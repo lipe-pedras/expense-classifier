@@ -65,6 +65,7 @@ export interface IDocumentRepository extends IRepository<Document> {
   findByIdForUser(id: string, userId: string): Promise<Document | null>;
   findAllByUser(userId: string): Promise<Document[]>;
   create(data: CreateDocumentInput): Promise<Document>;
+  updateName(id: string, originalName: string): Promise<Document>;
   updateStatus(id: string, status: ProcessingStatus): Promise<Document>;
   incrementExpenseCount(id: string): Promise<Document>;
   resetExpenseCount(id: string): Promise<Document>;

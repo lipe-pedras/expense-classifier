@@ -55,6 +55,7 @@ function makeDocumentRepo(): IDocumentRepository {
     findByIdForUser: vi.fn(),
     findAllByUser: vi.fn(),
     create: vi.fn(),
+    updateName: vi.fn(),
     updateStatus: vi.fn(),
     incrementExpenseCount: vi.fn(),
     resetExpenseCount: vi.fn(),
@@ -104,6 +105,8 @@ describe('DocumentService', () => {
       deleteFile: vi.fn().mockResolvedValue(undefined),
     } as unknown as StorageService;
     queue = { enqueue: vi.fn().mockResolvedValue(undefined) };
+    // Default: the user has no existing documents, so names are unique as-is.
+    (documentRepo.findAllByUser as any).mockResolvedValue([]);
     service = new DocumentService(
       documentRepo,
       expenseRepo,
@@ -154,6 +157,23 @@ describe('DocumentService', () => {
       );
     });
 
+    it('should auto-suffix the name when it collides with an existing document', async () => {
+      (documentRepo.findAllByUser as any).mockResolvedValue([
+        { ...fakeDocument, id: 'other', originalName: 'bill.pdf' },
+      ]);
+      (documentRepo.create as any).mockResolvedValue(fakeDocument);
+
+      await service.upload('user-1', {
+        buffer: Buffer.from('x'),
+        originalName: 'bill.pdf',
+        mimeType: 'application/pdf',
+      });
+
+      expect(documentRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ originalName: 'bill (1).pdf' }),
+      );
+    });
+
     it('should throw DocumentUnsupportedTypeError for disallowed mime types', async () => {
       await expect(
         service.upload('user-1', {
@@ -196,6 +216,54 @@ describe('DocumentService', () => {
       await expect(service.getById('user-2', 'doc-1')).rejects.toBeInstanceOf(
         DocumentNotFoundError,
       );
+    });
+  });
+
+  describe('rename', () => {
+    it('should rename the document when the new name is free', async () => {
+      (documentRepo.findByIdForUser as any).mockResolvedValue(fakeDocument);
+      (documentRepo.findAllByUser as any).mockResolvedValue([fakeDocument]);
+      (documentRepo.updateName as any).mockResolvedValue({ ...fakeDocument, originalName: 'rent.pdf' });
+
+      const result = await service.rename('user-1', 'doc-1', '  rent.pdf  ');
+
+      expect(documentRepo.updateName).toHaveBeenCalledWith('doc-1', 'rent.pdf');
+      expect(result.originalName).toBe('rent.pdf');
+    });
+
+    it('should auto-suffix when renaming to a name owned by another document', async () => {
+      (documentRepo.findByIdForUser as any).mockResolvedValue(fakeDocument);
+      (documentRepo.findAllByUser as any).mockResolvedValue([
+        fakeDocument,
+        { ...fakeDocument, id: 'doc-2', originalName: 'taxes.pdf' },
+      ]);
+      (documentRepo.updateName as any).mockImplementation((_id: string, name: string) => ({
+        ...fakeDocument,
+        originalName: name,
+      }));
+
+      const result = await service.rename('user-1', 'doc-1', 'taxes.pdf');
+
+      expect(documentRepo.updateName).toHaveBeenCalledWith('doc-1', 'taxes (1).pdf');
+      expect(result.originalName).toBe('taxes (1).pdf');
+    });
+
+    it('should allow keeping the same name (excludes itself from the collision check)', async () => {
+      (documentRepo.findByIdForUser as any).mockResolvedValue(fakeDocument);
+      (documentRepo.findAllByUser as any).mockResolvedValue([fakeDocument]);
+      (documentRepo.updateName as any).mockResolvedValue(fakeDocument);
+
+      await service.rename('user-1', 'doc-1', 'bill.pdf');
+
+      expect(documentRepo.updateName).toHaveBeenCalledWith('doc-1', 'bill.pdf');
+    });
+
+    it('should throw DocumentNotFoundError when the document is owned by another user', async () => {
+      (documentRepo.findByIdForUser as any).mockResolvedValue(null);
+      await expect(service.rename('user-2', 'doc-1', 'x.pdf')).rejects.toBeInstanceOf(
+        DocumentNotFoundError,
+      );
+      expect(documentRepo.updateName).not.toHaveBeenCalled();
     });
   });
 

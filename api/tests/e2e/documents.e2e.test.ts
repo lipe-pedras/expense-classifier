@@ -188,6 +188,88 @@ describe('GET /api/documents/:id', () => {
   });
 });
 
+describe('PUT /api/documents/:id (rename)', () => {
+  it('renames a document to a free name', async () => {
+    const { accessToken } = await registerAndLogin(app);
+    const doc = await uploadTestFile(app, accessToken, { fileName: 'receipt.png' });
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/api/documents/${doc.id}`,
+      headers: authHeader(accessToken),
+      payload: { originalName: 'january-receipt.png' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().originalName).toBe('january-receipt.png');
+    const dbDoc = await testPrisma.document.findUnique({ where: { id: doc.id } });
+    expect(dbDoc?.originalName).toBe('january-receipt.png');
+  });
+
+  it('auto-suffixes when renaming to a name already used by the same user', async () => {
+    const { accessToken } = await registerAndLogin(app);
+    await uploadTestFile(app, accessToken, { fileName: 'taxes.png' });
+    const second = await uploadTestFile(app, accessToken, { fileName: 'other.png' });
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/api/documents/${second.id}`,
+      headers: authHeader(accessToken),
+      payload: { originalName: 'taxes.png' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().originalName).toBe('taxes (1).png');
+  });
+
+  it('auto-suffixes a duplicate name on upload', async () => {
+    const { accessToken } = await registerAndLogin(app);
+    const first = await uploadTestFile(app, accessToken, { fileName: 'bill.png' });
+    const second = await uploadTestFile(app, accessToken, { fileName: 'bill.png' });
+
+    expect(first.originalName).toBe('bill.png');
+    expect(second.originalName).toBe('bill (1).png');
+  });
+
+  it('returns 400 when originalName is missing', async () => {
+    const { accessToken } = await registerAndLogin(app);
+    const doc = await uploadTestFile(app, accessToken);
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/api/documents/${doc.id}`,
+      headers: authHeader(accessToken),
+      payload: {},
+    });
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('returns 404 for another user\'s document', async () => {
+    const { accessToken: tok1 } = await registerAndLogin(app);
+    const { accessToken: tok2 } = await registerAndLogin(app);
+    const doc = await uploadTestFile(app, tok2);
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/api/documents/${doc.id}`,
+      headers: authHeader(tok1),
+      payload: { originalName: 'x.png' },
+    });
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 401 without auth', async () => {
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/documents/someid',
+      payload: { originalName: 'x.png' },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+});
+
 describe('DELETE /api/documents/:id', () => {
   it('deletes the document and removes it from the DB', async () => {
     const { accessToken } = await registerAndLogin(app);

@@ -32,6 +32,7 @@ export function makeMockServices(): AppServices {
       upload: vi.fn(),
       list: vi.fn(),
       getById: vi.fn(),
+      rename: vi.fn(),
       delete: vi.fn(),
       recordInternalResult: vi.fn(),
     } as unknown as AppServices['documentService'],

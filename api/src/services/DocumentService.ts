@@ -53,9 +53,10 @@ export class DocumentService {
     const fileType: FileType = input.mimeType === 'application/pdf' ? 'PDF' : 'IMAGE';
     const filePath = await this.storage.saveUploadedFile(input.buffer, input.originalName);
 
+    const originalName = await this.uniqueDocumentName(userId, input.originalName);
     const document = await this.documentRepo.create({
       userId,
-      originalName: input.originalName,
+      originalName,
       filePath,
       fileType,
     });
@@ -80,11 +81,50 @@ export class DocumentService {
     return doc;
   }
 
+  async rename(userId: string, documentId: string, desiredName: string): Promise<Document> {
+    const doc = await this.documentRepo.findByIdForUser(documentId, userId);
+    if (!doc) throw new DocumentNotFoundError();
+    const originalName = await this.uniqueDocumentName(userId, desiredName.trim(), documentId);
+    return this.documentRepo.updateName(documentId, originalName);
+  }
+
   async delete(userId: string, documentId: string): Promise<void> {
     const doc = await this.documentRepo.findByIdForUser(documentId, userId);
     if (!doc) throw new DocumentNotFoundError();
     await this.documentRepo.delete(documentId);
     await this.storage.deleteFile(doc.filePath);
+  }
+
+  /**
+   * Returns a document name unique among the user's documents. If `desired` is
+   * already taken, appends " (1)", " (2)", … before the file extension until a
+   * free name is found. `excludeId` skips the document being renamed so it does
+   * not collide with its own current name.
+   */
+  private async uniqueDocumentName(
+    userId: string,
+    desired: string,
+    excludeId?: string,
+  ): Promise<string> {
+    const existing = await this.documentRepo.findAllByUser(userId);
+    const taken = new Set(
+      existing.filter((d) => d.id !== excludeId).map((d) => d.originalName),
+    );
+    if (!taken.has(desired)) return desired;
+
+    // Split extension only when the dot is not the first character (so hidden
+    // names like ".env" keep their leading dot as part of the base).
+    const dot = desired.lastIndexOf('.');
+    const base = dot > 0 ? desired.slice(0, dot) : desired;
+    const ext = dot > 0 ? desired.slice(dot) : '';
+
+    let n = 1;
+    let candidate = `${base} (${n})${ext}`;
+    while (taken.has(candidate)) {
+      n += 1;
+      candidate = `${base} (${n})${ext}`;
+    }
+    return candidate;
   }
 
   /**

@@ -4,6 +4,7 @@ import {
   deleteDocumentSchema,
   getDocumentSchema,
   listDocumentsSchema,
+  renameDocumentSchema,
   uploadDocumentSchema,
 } from '../schemas/document.schemas.js';
 
@@ -14,9 +15,19 @@ export class DocumentController {
     app.post('/api/documents', { preHandler: auth, schema: uploadDocumentSchema }, (req, reply) => this.upload(req, reply));
     app.get('/api/documents', { preHandler: auth, schema: listDocumentsSchema }, (req, reply) => this.list(req, reply));
     app.get('/api/documents/:id', { preHandler: auth, schema: getDocumentSchema }, (req, reply) => this.getById(req, reply));
+    app.put('/api/documents/:id', { preHandler: auth, schema: renameDocumentSchema }, (req, reply) =>
+      this.rename(req, reply),
+    );
     app.delete('/api/documents/:id', { preHandler: auth, schema: deleteDocumentSchema }, (req, reply) =>
       this.delete(req, reply),
     );
+  }
+
+  private async rename(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { id } = req.params as { id: string };
+    const { originalName } = req.body as { originalName: string };
+    const document = await this.documentService.rename(req.userId, id, originalName);
+    reply.send(document);
   }
 
   private async upload(req: FastifyRequest, reply: FastifyReply): Promise<void> {
