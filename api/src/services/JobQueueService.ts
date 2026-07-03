@@ -4,6 +4,10 @@ import type { FileType } from '@prisma/client';
 export const DOCUMENT_QUEUE_NAME = 'document-processing';
 export const DOCUMENT_JOB_NAME = 'process-document';
 
+// The extractor hands preprocessed segments off to the llm-worker on this
+// queue; its completion is what marks a document DONE.
+export const CLASSIFICATION_QUEUE_NAME = 'classification';
+
 export interface JobCategory {
   slug: string;
   name: string;

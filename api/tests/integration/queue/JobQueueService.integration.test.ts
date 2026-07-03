@@ -22,6 +22,7 @@ describe('JobQueueService (integration)', () => {
       filePath: '/uploads/test.pdf',
       fileType: 'PDF' as const,
       userId: 'user-integration',
+      categories: [],
     };
 
     await service.enqueue(payload);

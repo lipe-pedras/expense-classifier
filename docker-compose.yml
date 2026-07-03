@@ -60,14 +60,15 @@ services:
     volumes:
       - uploads_data:/app/uploads
 
-  worker:
+  # Extraction half of the pipeline (extract → segment → validate → preprocess),
+  # then hands off to the llm-worker via the `classification` queue. No Ollama.
+  extractor:
     build:
       context: ./worker
       dockerfile: Dockerfile
+    command: python -u main.py
     environment:
       REDIS_URL: ${REDIS_URL}
-      OLLAMA_URL: ${OLLAMA_URL}
-      OLLAMA_MODEL: ${OLLAMA_MODEL}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
       INTERNAL_API_URL: http://api:3000
       FILE_UPLOAD_PATH: ${FILE_UPLOAD_PATH}
@@ -76,8 +77,6 @@ services:
       DOCLING_DEVICE: ${DOCLING_DEVICE:-cpu}
     depends_on:
       redis:
-        condition: service_healthy
-      ollama:
         condition: service_healthy
       api:
         condition: service_started
@@ -92,6 +91,27 @@ services:
     volumes:
       - uploads_data:/app/uploads
       - easyocr_cache:/root/.EasyOCR
+
+  # LLM half of the pipeline (classify → postprocess → persist). Talks to Ollama
+  # and never touches the source file — it works from the extractor's segments.
+  llm-worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    command: python -u llm_main.py
+    environment:
+      REDIS_URL: ${REDIS_URL}
+      OLLAMA_URL: ${OLLAMA_URL}
+      OLLAMA_MODEL: ${OLLAMA_MODEL}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      INTERNAL_API_URL: http://api:3000
+    depends_on:
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      api:
+        condition: service_started
 
   frontend:
     build:

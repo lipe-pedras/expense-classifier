@@ -53,17 +53,20 @@ async def test_process_job_returns_valid_json():
             "fileType": "PDF",
         }
 
-    # process_job will fail at the extraction stage because the file doesn't
-    # exist — we only want to confirm the job handler is callable and its
-    # happy-path return shape is correct, so we mock the pipeline.
-    from unittest.mock import patch, MagicMock
+    # We only want to confirm the extractor handler is callable and its return
+    # shape is correct, so we mock the extraction pipeline and the hand-off
+    # enqueue (which would otherwise push a real classification job to Redis).
+    from unittest.mock import patch, MagicMock, AsyncMock
 
     mock_pipeline = MagicMock()
     mock_pipeline.run = MagicMock()
 
-    with patch("main.build_pipeline", return_value=mock_pipeline):
+    with patch("main.build_extraction_pipeline", return_value=mock_pipeline), patch(
+        "main._enqueue_classification", new=AsyncMock()
+    ) as enqueue:
         result = await process_job(_FakeJob())
 
+    enqueue.assert_awaited_once()
     payload = json.loads(result)
     assert payload["documentId"] == document_id
     assert payload["userId"] == user_id

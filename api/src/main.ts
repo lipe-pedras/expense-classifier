@@ -12,7 +12,11 @@ import { AuthService, BcryptHasher } from './services/AuthService.js';
 import { UserService } from './services/UserService.js';
 import { CategoryService } from './services/CategoryService.js';
 import { StorageService } from './services/StorageService.js';
-import { JobQueueService, DOCUMENT_QUEUE_NAME } from './services/JobQueueService.js';
+import {
+  JobQueueService,
+  DOCUMENT_QUEUE_NAME,
+  CLASSIFICATION_QUEUE_NAME,
+} from './services/JobQueueService.js';
 import { DocumentService } from './services/DocumentService.js';
 import { ExpenseService } from './services/ExpenseService.js';
 import { ExportService } from './services/ExportService.js';
@@ -30,10 +34,15 @@ async function main(): Promise<void> {
   const expenseRepo = new ExpenseRepository(prisma);
   const categoryRepo = new CategoryRepository(prisma);
 
-  // Redis + BullMQ
+  // Redis + BullMQ. The pipeline spans two queues: the extractor consumes
+  // `document-processing`, then hands off to the llm-worker on `classification`.
   const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: null });
-  const queue = new Queue(DOCUMENT_QUEUE_NAME, { connection: redis });
-  const queueEvents = new QueueEvents(DOCUMENT_QUEUE_NAME, { connection: redis.duplicate() });
+  const documentQueue = new Queue(DOCUMENT_QUEUE_NAME, { connection: redis });
+  const classificationQueue = new Queue(CLASSIFICATION_QUEUE_NAME, { connection: redis });
+  const documentQueueEvents = new QueueEvents(DOCUMENT_QUEUE_NAME, { connection: redis.duplicate() });
+  const classificationQueueEvents = new QueueEvents(CLASSIFICATION_QUEUE_NAME, {
+    connection: redis.duplicate(),
+  });
 
   // Services
   const jwtService = new JwtService(
@@ -44,7 +53,7 @@ async function main(): Promise<void> {
   );
   const hasher = new BcryptHasher();
   const storage = new StorageService(config.fileUploadPath, fs);
-  const jobQueue = new JobQueueService(queue);
+  const jobQueue = new JobQueueService(documentQueue);
 
   const authService = new AuthService(userRepo, jwtService, hasher);
   const userService = new UserService(userRepo, hasher);
@@ -70,9 +79,10 @@ async function main(): Promise<void> {
   eventBus.on('job:completed', { handle: (e) => wsNotifier.onCompleted(e) });
   eventBus.on('job:failed', { handle: (e) => wsNotifier.onFailed(e) });
 
-  // BullMQ event subscriptions — the Python worker returns json.dumps({documentId, userId}).
-  // Node.js workers in BullMQ v5 return already-parsed objects; Python workers return JSON strings.
-  queueEvents.on('completed', async ({ jobId, returnvalue }) => {
+  // A document is DONE only when the terminal classification stage completes.
+  // The Python worker returns json.dumps({documentId, userId}); Node.js workers
+  // in BullMQ v5 return already-parsed objects, so handle both shapes.
+  classificationQueueEvents.on('completed', async ({ jobId, returnvalue }) => {
     let data: { documentId?: string; userId?: string } | undefined;
     if (typeof returnvalue === 'string') {
       try { data = JSON.parse(returnvalue); } catch { /* malformed */ }
@@ -88,21 +98,26 @@ async function main(): Promise<void> {
     }
   });
 
-  queueEvents.on('failed', async ({ jobId, failedReason }) => {
-    try {
-      const job = await queue.getJob(jobId);
-      if (job?.data.documentId && job?.data.userId) {
-        await eventBus.emit('job:failed', {
-          jobId,
-          documentId: job.data.documentId,
-          userId: job.data.userId,
-          reason: failedReason,
-        });
+  // A failure in EITHER stage (extraction or classification) fails the document.
+  const wireFailure = (events: QueueEvents, queue: Queue) => {
+    events.on('failed', async ({ jobId, failedReason }) => {
+      try {
+        const job = await queue.getJob(jobId);
+        if (job?.data.documentId && job?.data.userId) {
+          await eventBus.emit('job:failed', {
+            jobId,
+            documentId: job.data.documentId,
+            userId: job.data.userId,
+            reason: failedReason,
+          });
+        }
+      } catch {
+        // Job already removed or unknown
       }
-    } catch {
-      // Job already removed or unknown
-    }
-  });
+    });
+  };
+  wireFailure(documentQueueEvents, documentQueue);
+  wireFailure(classificationQueueEvents, classificationQueue);
 
   const app = await buildApp({
     authService,
