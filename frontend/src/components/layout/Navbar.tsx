@@ -42,6 +42,15 @@ export function Navbar() {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Link
+              component={RouterLink}
+              to="/categories"
+              variant="body2"
+              color="text.secondary"
+              underline="hover"
+            >
+              Categories
+            </Link>
             <Tooltip title={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
               <IconButton onClick={toggleMode} color="inherit" aria-label="Toggle theme">
                 {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}

@@ -25,6 +25,7 @@ export function makeMockServices(): AppServices {
     categoryService: {
       list: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
       delete: vi.fn(),
     } as unknown as AppServices['categoryService'],
 

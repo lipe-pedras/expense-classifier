@@ -19,8 +19,10 @@ export const authApi = {
 
 export const categoriesApi = {
   list: () => apiClient.get<Category[]>('/api/categories').then((r) => r.data),
-  create: (data: { name: string; slug: string }) =>
+  create: (data: { name: string }) =>
     apiClient.post<Category>('/api/categories', data).then((r) => r.data),
+  update: (id: string, data: { name: string }) =>
+    apiClient.put<Category>(`/api/categories/${id}`, data).then((r) => r.data),
   delete: (id: string) => apiClient.delete(`/api/categories/${id}`),
 };
 

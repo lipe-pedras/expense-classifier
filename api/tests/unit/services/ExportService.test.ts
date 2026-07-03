@@ -61,8 +61,10 @@ function makeCategoryRepo(): ICategoryRepository {
     findById: vi.fn(),
     findByIdForUser: vi.fn(),
     findBySlugForUser: vi.fn(),
+    findByNameForUser: vi.fn(),
     findAllByUser: vi.fn(),
     create: vi.fn(),
+    update: vi.fn(),
     createManyForUser: vi.fn(),
     delete: vi.fn(),
   };

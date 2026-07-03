@@ -3,6 +3,7 @@ import { useAuthStore } from '@/store/authStore';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { CategoriesPage } from '@/pages/CategoriesPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -39,6 +40,14 @@ export function App() {
         element={
           <RequireAuth>
             <DashboardPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/categories"
+        element={
+          <RequireAuth>
+            <CategoriesPage />
           </RequireAuth>
         }
       />

@@ -2,9 +2,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildTestApp, makeMockServices, type AppServices } from '../../helpers/testApp.js';
 import {
+  CategoryNameTakenError,
   CategoryNotFoundError,
-  CategorySlugTakenError,
   CategorySystemDeleteError,
+  CategorySystemModifyError,
 } from '../../../src/errors/AppError.js';
 
 const AUTH = { authorization: 'Bearer valid-token' };
@@ -48,7 +49,7 @@ describe('CategoryController', () => {
   });
 
   describe('POST /api/categories', () => {
-    it('should return 201 with the created category', async () => {
+    it('should return 201 with the created category (name only)', async () => {
       const newCat = { ...category, id: 'cat-2', name: 'Gym', slug: 'gym', isSystem: false };
       (services.categoryService.create as any).mockResolvedValue(newCat);
 
@@ -56,25 +57,95 @@ describe('CategoryController', () => {
         method: 'POST',
         url: '/api/categories',
         headers: AUTH,
-        body: { name: 'Gym', slug: 'gym' },
+        body: { name: 'Gym' },
       });
 
       expect(res.statusCode).toBe(201);
       expect(res.json().slug).toBe('gym');
-      expect(services.categoryService.create).toHaveBeenCalledWith('user-1', {
-        name: 'Gym',
-        slug: 'gym',
-      });
+      expect(services.categoryService.create).toHaveBeenCalledWith('user-1', { name: 'Gym' });
     });
 
-    it('should return 409 when the slug is already taken', async () => {
-      (services.categoryService.create as any).mockRejectedValue(new CategorySlugTakenError());
+    it('should return 400 when the name is missing', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/categories',
+        headers: AUTH,
+        body: {},
+      });
+
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('should return 409 when the name is already taken', async () => {
+      (services.categoryService.create as any).mockRejectedValue(new CategoryNameTakenError());
 
       const res = await app.inject({
         method: 'POST',
         url: '/api/categories',
         headers: AUTH,
-        body: { name: 'Rent', slug: 'rent' },
+        body: { name: 'Rent' },
+      });
+
+      expect(res.statusCode).toBe(409);
+    });
+  });
+
+  describe('PUT /api/categories/:id', () => {
+    it('should return 200 with the renamed category', async () => {
+      const renamed = { ...category, id: 'cat-2', name: 'Fitness', slug: 'fitness', isSystem: false };
+      (services.categoryService.update as any).mockResolvedValue(renamed);
+
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/categories/cat-2',
+        headers: AUTH,
+        body: { name: 'Fitness' },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json().name).toBe('Fitness');
+      expect(services.categoryService.update).toHaveBeenCalledWith('user-1', 'cat-2', { name: 'Fitness' });
+    });
+
+    it('should return 400 when the name is missing', async () => {
+      const res = await app.inject({ method: 'PUT', url: '/api/categories/cat-2', headers: AUTH, body: {} });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('should return 403 when renaming a system category', async () => {
+      (services.categoryService.update as any).mockRejectedValue(new CategorySystemModifyError());
+
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/categories/cat-1',
+        headers: AUTH,
+        body: { name: 'X' },
+      });
+
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('should return 404 when the category does not exist', async () => {
+      (services.categoryService.update as any).mockRejectedValue(new CategoryNotFoundError());
+
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/categories/missing',
+        headers: AUTH,
+        body: { name: 'X' },
+      });
+
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('should return 409 when the new name is taken', async () => {
+      (services.categoryService.update as any).mockRejectedValue(new CategoryNameTakenError());
+
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/categories/cat-2',
+        headers: AUTH,
+        body: { name: 'Rent' },
       });
 
       expect(res.statusCode).toBe(409);

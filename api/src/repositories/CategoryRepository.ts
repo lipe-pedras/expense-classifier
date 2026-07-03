@@ -3,6 +3,7 @@ import { PrismaRepository } from './base/PrismaRepository.js';
 import type {
   ICategoryRepository,
   CreateCategoryInput,
+  UpdateCategoryInput,
 } from './interfaces/IRepository.js';
 
 export class CategoryRepository
@@ -23,6 +24,12 @@ export class CategoryRepository
     });
   }
 
+  findByNameForUser(name: string, userId: string): Promise<Category | null> {
+    return this.prisma.category.findUnique({
+      where: { userId_name: { userId, name } },
+    });
+  }
+
   findAllByUser(userId: string): Promise<Category[]> {
     return this.prisma.category.findMany({
       where: { userId },
@@ -32,6 +39,10 @@ export class CategoryRepository
 
   create(data: CreateCategoryInput): Promise<Category> {
     return this.prisma.category.create({ data });
+  }
+
+  update(id: string, data: UpdateCategoryInput): Promise<Category> {
+    return this.prisma.category.update({ where: { id }, data });
   }
 
   async createManyForUser(

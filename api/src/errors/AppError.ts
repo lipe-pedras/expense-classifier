@@ -14,7 +14,9 @@ export type AppErrorCode =
   | 'EXPENSE_NOT_FOUND'
   | 'CATEGORY_NOT_FOUND'
   | 'CATEGORY_SYSTEM_DELETE'
+  | 'CATEGORY_SYSTEM_MODIFY'
   | 'CATEGORY_SLUG_TAKEN'
+  | 'CATEGORY_NAME_TAKEN'
   | 'INTERNAL_ERROR';
 
 export class AppError extends Error {
@@ -123,9 +125,21 @@ export class CategorySystemDeleteError extends AppError {
   }
 }
 
+export class CategorySystemModifyError extends AppError {
+  constructor(message = 'System categories cannot be modified') {
+    super('CATEGORY_SYSTEM_MODIFY', message, 403);
+  }
+}
+
 export class CategorySlugTakenError extends AppError {
   constructor(message = 'Category slug already exists for this user') {
     super('CATEGORY_SLUG_TAKEN', message, 409);
+  }
+}
+
+export class CategoryNameTakenError extends AppError {
+  constructor(message = 'Category name already exists for this user') {
+    super('CATEGORY_NAME_TAKEN', message, 409);
   }
 }
 

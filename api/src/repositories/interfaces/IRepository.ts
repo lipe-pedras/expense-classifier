@@ -115,11 +115,18 @@ export interface CreateCategoryInput {
   isSystem?: boolean;
 }
 
+export interface UpdateCategoryInput {
+  name: string;
+  slug: string;
+}
+
 export interface ICategoryRepository extends IRepository<Category> {
   findByIdForUser(id: string, userId: string): Promise<Category | null>;
   findBySlugForUser(slug: string, userId: string): Promise<Category | null>;
+  findByNameForUser(name: string, userId: string): Promise<Category | null>;
   findAllByUser(userId: string): Promise<Category[]>;
   create(data: CreateCategoryInput): Promise<Category>;
+  update(id: string, data: UpdateCategoryInput): Promise<Category>;
   createManyForUser(
     userId: string,
     data: Omit<CreateCategoryInput, 'userId'>[],

@@ -71,4 +71,5 @@ model Category {
   expenses Expense[]
 
   @@unique([userId, slug])
+  @@unique([userId, name])
 }
