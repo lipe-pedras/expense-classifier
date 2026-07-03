@@ -16,9 +16,9 @@ import type { ChartResult } from '@/types';
 
 const EXAMPLES = [
   'Total spending by category',
-  'Spending per month over the last 6 months as a line',
-  'Number of expenses by vendor',
-  'Average expense by currency as a table',
+  'Rent per month over the last 6 months as a line',
+  'Top 5 vendors by total spent',
+  'Monthly spending on utilities excluding insurance',
 ];
 
 function extractError(err: unknown): string {
@@ -57,8 +57,8 @@ export function ChartsPage() {
             Ask your data
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Describe a chart in plain language — the model only picks how to query; your data never
-            leaves the server.
+            Describe a chart in plain language — including specific categories, vendors, or filters.
+            The model only writes the query; your data never leaves the server.
           </Typography>
         </Box>
 
