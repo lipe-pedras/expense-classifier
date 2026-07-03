@@ -270,6 +270,47 @@ describe('PUT /api/documents/:id (rename)', () => {
   });
 });
 
+describe('POST /api/documents/:id/reprocess', () => {
+  it('re-enqueues the document and sets it back to PENDING', async () => {
+    const { accessToken } = await registerAndLogin(app);
+    const doc = await uploadTestFile(app, accessToken);
+    await waitForDocumentDone(app, accessToken, doc.id);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/documents/${doc.id}/reprocess`,
+      headers: authHeader(accessToken),
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().status).toBe('PENDING');
+
+    // The mock worker processes the re-enqueued job back to DONE.
+    await waitForDocumentDone(app, accessToken, doc.id);
+    const dbDoc = await testPrisma.document.findUnique({ where: { id: doc.id } });
+    expect(dbDoc!.status).toBe('DONE');
+  });
+
+  it('returns 404 for another user\'s document', async () => {
+    const { accessToken: tok1 } = await registerAndLogin(app);
+    const { accessToken: tok2 } = await registerAndLogin(app);
+    const doc = await uploadTestFile(app, tok2);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/documents/${doc.id}/reprocess`,
+      headers: authHeader(tok1),
+    });
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 401 without auth', async () => {
+    const res = await app.inject({ method: 'POST', url: '/api/documents/someid/reprocess' });
+    expect(res.statusCode).toBe(401);
+  });
+});
+
 describe('DELETE /api/documents/:id', () => {
   it('deletes the document and removes it from the DB', async () => {
     const { accessToken } = await registerAndLogin(app);

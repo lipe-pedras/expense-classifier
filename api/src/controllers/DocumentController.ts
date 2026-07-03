@@ -5,6 +5,7 @@ import {
   getDocumentSchema,
   listDocumentsSchema,
   renameDocumentSchema,
+  reprocessDocumentSchema,
   uploadDocumentSchema,
 } from '../schemas/document.schemas.js';
 
@@ -18,9 +19,18 @@ export class DocumentController {
     app.put('/api/documents/:id', { preHandler: auth, schema: renameDocumentSchema }, (req, reply) =>
       this.rename(req, reply),
     );
+    app.post('/api/documents/:id/reprocess', { preHandler: auth, schema: reprocessDocumentSchema }, (req, reply) =>
+      this.reprocess(req, reply),
+    );
     app.delete('/api/documents/:id', { preHandler: auth, schema: deleteDocumentSchema }, (req, reply) =>
       this.delete(req, reply),
     );
+  }
+
+  private async reprocess(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { id } = req.params as { id: string };
+    const document = await this.documentService.reprocess(req.userId, id);
+    reply.send(document);
   }
 
   private async rename(req: FastifyRequest, reply: FastifyReply): Promise<void> {

@@ -39,6 +39,8 @@ export const documentsApi = {
   list: () => apiClient.get<Document[]>('/api/documents').then((r) => r.data),
   rename: (id: string, originalName: string) =>
     apiClient.put<Document>(`/api/documents/${id}`, { originalName }).then((r) => r.data),
+  reprocess: (id: string) =>
+    apiClient.post<Document>(`/api/documents/${id}/reprocess`).then((r) => r.data),
   delete: (id: string) => apiClient.delete(`/api/documents/${id}`),
 };
 

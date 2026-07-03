@@ -278,6 +278,36 @@ describe('DocumentService', () => {
     });
   });
 
+  describe('reprocess', () => {
+    it('should set the document PENDING and re-enqueue with the user categories', async () => {
+      (documentRepo.findByIdForUser as any).mockResolvedValue(fakeDocument);
+      (documentRepo.updateStatus as any).mockResolvedValue({ ...fakeDocument, status: 'PENDING' });
+
+      const result = await service.reprocess('user-1', 'doc-1');
+
+      expect(documentRepo.updateStatus).toHaveBeenCalledWith('doc-1', 'PENDING');
+      expect(queue.enqueue).toHaveBeenCalledWith({
+        documentId: fakeDocument.id,
+        filePath: fakeDocument.filePath,
+        fileType: fakeDocument.fileType,
+        userId: 'user-1',
+        categories: [
+          { slug: 'rent', name: 'Rent' },
+          { slug: 'other', name: 'Other' },
+        ],
+      });
+      expect(result.status).toBe('PENDING');
+    });
+
+    it('should throw DocumentNotFoundError when the document is owned by another user', async () => {
+      (documentRepo.findByIdForUser as any).mockResolvedValue(null);
+      await expect(service.reprocess('user-2', 'doc-1')).rejects.toBeInstanceOf(
+        DocumentNotFoundError,
+      );
+      expect(queue.enqueue).not.toHaveBeenCalled();
+    });
+  });
+
   describe('delete', () => {
     it('should delete the document and best-effort remove the file', async () => {
       (documentRepo.findByIdForUser as any).mockResolvedValue(fakeDocument);

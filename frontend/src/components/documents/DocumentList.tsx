@@ -13,9 +13,11 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import MuiButton from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { documentsApi } from '@/api';
 import { useToastStore } from '@/store/toastStore';
 import { StatusBadge } from '@/components/ui/Badge';
@@ -99,6 +101,24 @@ function RenameDialog({
 function DocumentRow({ doc, onChanged }: { doc: Document; onChanged: () => void }) {
   const { addToast } = useToastStore();
   const [renameOpen, setRenameOpen] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
+
+  // While the document is queued/running a fresh inference is already under way.
+  const isProcessing = doc.status === 'PENDING' || doc.status === 'PROCESSING';
+
+  const handleReprocess = async () => {
+    if (isProcessing || reprocessing) return;
+    setReprocessing(true);
+    try {
+      await documentsApi.reprocess(doc.id);
+      addToast('info', `Re-running classification on "${doc.originalName}".`);
+      onChanged();
+    } catch {
+      addToast('error', 'Failed to reprocess document.');
+    } finally {
+      setReprocessing(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!confirm(`Delete "${doc.originalName}"? All its expenses will also be deleted.`)) return;
@@ -132,6 +152,18 @@ function DocumentRow({ doc, onChanged }: { doc: Document; onChanged: () => void 
           {formatDate(doc.uploadedAt)} · {doc.expenseCount} expense{doc.expenseCount !== 1 ? 's' : ''}
         </Typography>
       </Box>
+      <Tooltip title={isProcessing ? 'Already processing' : 'Re-run classification'}>
+        <span>
+          <IconButton
+            size="small"
+            onClick={handleReprocess}
+            disabled={isProcessing || reprocessing}
+            sx={{ flexShrink: 0 }}
+          >
+            {reprocessing ? <CircularProgress size={16} /> : <RefreshIcon fontSize="small" />}
+          </IconButton>
+        </span>
+      </Tooltip>
       <StatusBadge status={doc.status} />
       <Tooltip title="Rename document">
         <IconButton size="small" onClick={() => setRenameOpen(true)} sx={{ flexShrink: 0 }}>

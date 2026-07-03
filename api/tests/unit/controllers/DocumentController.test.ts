@@ -164,6 +164,34 @@ describe('DocumentController', () => {
     });
   });
 
+  describe('POST /api/documents/:id/reprocess', () => {
+    it('should return 200 with the document set back to PENDING', async () => {
+      (services.documentService.reprocess as any).mockResolvedValue({ ...document, status: 'PENDING' });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/documents/doc-1/reprocess',
+        headers: AUTH,
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json().status).toBe('PENDING');
+      expect(services.documentService.reprocess).toHaveBeenCalledWith('user-1', 'doc-1');
+    });
+
+    it('should return 404 for another user\'s document', async () => {
+      (services.documentService.reprocess as any).mockRejectedValue(new DocumentNotFoundError());
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/documents/doc-other/reprocess',
+        headers: AUTH,
+      });
+
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
   describe('DELETE /api/documents/:id', () => {
     it('should return 204 on success', async () => {
       (services.documentService.delete as any).mockResolvedValue(undefined);

@@ -34,6 +34,7 @@ export function makeMockServices(): AppServices {
       list: vi.fn(),
       getById: vi.fn(),
       rename: vi.fn(),
+      reprocess: vi.fn(),
       delete: vi.fn(),
       recordInternalResult: vi.fn(),
     } as unknown as AppServices['documentService'],

@@ -57,6 +57,18 @@ export const renameDocumentSchema = {
   },
 } as const;
 
+export const reprocessDocumentSchema = {
+  tags: ['Documents'],
+  summary: 'Re-run extraction and classification on a document',
+  security: bearerAuth,
+  params: idParamSchema,
+  response: {
+    200: documentSchema,
+    401: errorSchema,
+    404: errorSchema,
+  },
+} as const;
+
 export const deleteDocumentSchema = {
   tags: ['Documents'],
   summary: 'Delete a document by ID',

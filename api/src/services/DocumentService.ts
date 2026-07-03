@@ -93,6 +93,31 @@ export class DocumentService {
     return this.documentRepo.updateName(documentId, originalName);
   }
 
+  /**
+   * Re-runs the whole pipeline (extraction → classification) on an already
+   * uploaded document. Useful when a quantized-model classification came out
+   * wrong and a fresh inference may do better. Segments aren't persisted, so we
+   * re-enqueue the original file; the persistence step resets prior expenses,
+   * so a reprocess replaces rather than duplicates them.
+   */
+  async reprocess(userId: string, documentId: string): Promise<Document> {
+    const doc = await this.documentRepo.findByIdForUser(documentId, userId);
+    if (!doc) throw new DocumentNotFoundError();
+
+    const updated = await this.documentRepo.updateStatus(documentId, 'PENDING');
+
+    const categories = await this.categoryRepo.findAllByUser(userId);
+    await this.queue.enqueue({
+      documentId: doc.id,
+      filePath: doc.filePath,
+      fileType: doc.fileType,
+      userId,
+      categories: categories.map((c) => ({ slug: c.slug, name: c.name })),
+    });
+
+    return updated;
+  }
+
   async delete(userId: string, documentId: string): Promise<void> {
     const doc = await this.documentRepo.findByIdForUser(documentId, userId);
     if (!doc) throw new DocumentNotFoundError();
