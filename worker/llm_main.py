@@ -67,12 +67,22 @@ async def process_chart_job(job, job_token=None):
     logger.info("Generating chart spec for job %s", job.id)
 
     generator = ChartSpecGenerator(base_url=config.ollama_url, model=config.ollama_model)
-    # The model only maps the prompt to a whitelisted spec — it never sees data.
-    spec = await asyncio.to_thread(generator.generate, data["prompt"], data.get("allowed", {}))
+    # The model only maps the prompt to a chart plan (spec or read-only SQL) — it
+    # never sees data. `schema`/`categories` ground it; `retry` carries a prior
+    # failed SQL + Postgres error so it can self-correct.
+    plan = await asyncio.to_thread(
+        generator.generate,
+        data["prompt"],
+        data.get("allowed", {}),
+        data.get("schema"),
+        data.get("categories", []),
+        data.get("retry"),
+    )
 
-    logger.info("Job %s chart spec: %s", job.id, spec)
-    # The API validates and compiles this spec into user-scoped SQL.
-    return json.dumps(spec)
+    logger.info("Job %s chart plan: %s", job.id, plan)
+    # The API validates and either compiles the spec or executes the SQL, both
+    # scoped to the user.
+    return json.dumps(plan)
 
 
 async def prewarm_ollama() -> None:
