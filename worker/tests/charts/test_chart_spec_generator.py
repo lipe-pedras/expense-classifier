@@ -93,3 +93,26 @@ def test_no_retry_sends_only_system_and_user_messages():
 
     messages = client.post.call_args.kwargs["json"]["messages"]
     assert [m["role"] for m in messages] == ["system", "user"]
+
+
+def test_generate_requests_deterministic_output():
+    client = make_client('{"unsupported": true}')
+    gen = ChartSpecGenerator("http://ollama:11434", "m", client=client)
+    gen.generate("x", ALLOWED)
+
+    assert client.post.call_args.kwargs["json"]["options"]["temperature"] == 0
+
+
+def test_prompt_includes_todays_date_and_fewshot_examples():
+    import datetime
+
+    client = make_client('{"unsupported": true}')
+    gen = ChartSpecGenerator("http://ollama:11434", "m", client=client)
+    gen.generate("x", ALLOWED)
+
+    system_prompt = client.post.call_args.kwargs["json"]["messages"][0]["content"]
+    assert datetime.date.today().isoformat() in system_prompt
+    # Few-shot exemplars for date math and top-N filtering.
+    assert "Examples:" in system_prompt
+    assert "date_trunc" in system_prompt
+    assert "ORDER BY value DESC" in system_prompt
